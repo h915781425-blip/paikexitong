@@ -10,9 +10,9 @@
         :root {
             --primary-pink: #ff8e91;
             --primary-blue: #5cafff;
-            --status-pending: #5cafff; /* 待上课：蓝色 */
-            --status-completed: #4caf50; /* 已上课：绿色 */
-            --status-canceled: #757575; /* 核心修改：请假圆点换成更深的灰色 */
+            --status-pending: #5cafff; 
+            --status-completed: #4caf50; 
+            --status-canceled: #757575; 
             --bg-color: linear-gradient(135deg, #eef2f3 0%, #ffe0e0 50%, #e0f2ff 100%);
             --sidebar-glass: rgba(255, 255, 255, 0.5);
             --card-glass: rgba(255, 255, 255, 0.9);
@@ -82,9 +82,11 @@
         .event-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;}
         .event-time-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;}
         
-        /* 核心修改：移除变淡效果，加深文字颜色，保证看得清 */
-        .event-card.status-canceled-text { text-decoration: line-through; }
-        .event-card.status-canceled-text .event-time-name { color: #555; }
+        /* ======== 核心修改：请假状态文字显示红色划线 ======== */
+        .event-card.status-canceled-text .event-time-name { 
+            color: #555; /* 字体深灰色，保证清晰度 */
+            text-decoration: line-through red 2px; /* 红色划线，加粗2px更显眼 */
+        }
 
         /* 学生列表卡片 */
         .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
@@ -250,7 +252,7 @@
     <div class="modal-content">
         <div class="modal-title" id="modalEventTitle">课程操作</div>
         <button class="modal-btn btn-complete" onclick="setEventStatus('completed')">✅ 标记已上课 (变绿)</button>
-        <button class="modal-btn btn-cancel" onclick="setEventStatus('canceled')">❌ 学生请假 (变灰划线)</button>
+        <button class="modal-btn btn-cancel" onclick="setEventStatus('canceled')">❌ 学生请假 (变灰底红划线)</button>
         <button class="modal-btn btn-reset" onclick="setEventStatus('pending')">📅 恢复为待上课 (变蓝)</button>
         <button class="modal-btn btn-remove" onclick="setEventStatus('delete')">🗑️ 彻底删除这节课</button>
         <button class="modal-btn btn-close" onclick="closeModal()">取消</button>
@@ -271,7 +273,6 @@
         updateStudentDropdown();
     });
 
-    // ================== 页面切换逻辑 ==================
     function switchTab(tabName) {
         document.getElementById('tab-calendar').classList.remove('active');
         document.getElementById('tab-students').classList.remove('active');
@@ -291,7 +292,6 @@
         }
     }
 
-    // ================== 统计计算逻辑 ==================
     function refreshStats(calInstance) {
         let cal = calInstance || calendar;
         if (!cal) return;
@@ -319,7 +319,6 @@
         document.getElementById('stat-fee').innerText = '¥ ' + totalFee.toFixed(2);
     }
 
-    // ================== 学生档案管理逻辑 ==================
     function saveStudent() {
         let name = document.getElementById('stName').value.trim();
         let grade = document.getElementById('stGrade').value;
@@ -402,7 +401,6 @@
         });
     }
 
-    // ================== 日历排课与打卡联动逻辑 ==================
     function initCalendar() {
         var calendarEl = document.getElementById('calendar');
 
@@ -466,7 +464,6 @@
         } else {
             currentClickedEvent.setExtendedProp('status', status);
             
-            // 核心修改：让请假状态的方块背景色变成更饱满的不透明灰色
             if(status === 'pending') {
                 currentClickedEvent.setProp('backgroundColor', 'var(--status-pending)');
                 currentClickedEvent.setProp('borderColor', 'var(--status-pending)');
@@ -474,8 +471,8 @@
                 currentClickedEvent.setProp('backgroundColor', 'rgba(76, 175, 80, 0.2)'); 
                 currentClickedEvent.setProp('borderColor', 'var(--status-completed)');
             } else if(status === 'canceled') {
-                currentClickedEvent.setProp('backgroundColor', '#e0e0e0'); // 更清晰的实体浅灰色
-                currentClickedEvent.setProp('borderColor', '#9e9e9e'); // 边框也加深
+                currentClickedEvent.setProp('backgroundColor', '#e0e0e0'); 
+                currentClickedEvent.setProp('borderColor', '#9e9e9e'); 
             }
         }
 
