@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>独立家教管理系统 - 防冲突版</title>
+    <title>独立家教管理系统</title>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
     <style>
         /* 全局样式与变量 */
@@ -46,6 +46,10 @@
         .form-group { margin: 0; }
         .form-group label { font-size: 12px; color: var(--sub-text-color); margin-bottom: 6px; display: block;}
         .form-group input, .form-group select { width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 10px; font-size: 14px; background: white;}
+        /* 特别优化下拉框的 optgroup 样式 */
+        select optgroup { font-weight: bold; color: var(--primary-blue); font-style: normal; }
+        select option { color: var(--text-color); }
+        
         button.btn-pink { background: var(--primary-pink); border-radius: 8px; border: none; color: white; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; width: 100%; transition: opacity 0.2s;}
         button.btn-blue { background: var(--primary-blue); border-radius: 8px; border: none; color: white; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; width: 100%; transition: opacity 0.2s;}
         button:active { opacity: 0.8; }
@@ -136,14 +140,30 @@
             </div>
             
             <div class="form-group">
-                <label>辅导阶段及科目:</label>
+                <label>辅导年级及科目:</label>
                 <div style="display: flex; gap: 10px;">
-                    <select id="stGrade" style="flex: 1;">
-                        <option value="小学">小学</option>
-                        <option value="初中">初中</option>
-                        <option value="高中">高中</option>
+                    <select id="stGrade" style="flex: 1.2;">
+                        <optgroup label="小学阶段">
+                            <option value="一年级">一年级</option>
+                            <option value="二年级">二年级</option>
+                            <option value="三年级">三年级</option>
+                            <option value="四年级">四年级</option>
+                            <option value="五年级">五年级</option>
+                            <option value="六年级">六年级</option>
+                        </optgroup>
+                        <optgroup label="初中阶段">
+                            <option value="初一">初一</option>
+                            <option value="初二" selected>初二</option>
+                            <option value="初三">初三</option>
+                        </optgroup>
+                        <optgroup label="高中阶段">
+                            <option value="高一">高一</option>
+                            <option value="高二">高二</option>
+                            <option value="高三">高三</option>
+                        </optgroup>
                     </select>
-                    <select id="stSubjectName" style="flex: 1.2;">
+                    
+                    <select id="stSubjectName" style="flex: 1;">
                         <option value="语文">语文</option>
                         <option value="数学" selected>数学</option>
                         <option value="英语">英语</option>
@@ -228,7 +248,7 @@
             return;
         }
 
-        // 组合科目，例如：高中物理
+        // 组合科目，例如：初二数学
         let fullSubject = grade + subjectName;
 
         let newStudent = {
@@ -359,7 +379,6 @@
             return;
         }
 
-        // 核心改进：冲突检测逻辑
         let newStart = new Date(date + 'T' + start + ':00');
         let newEnd = new Date(date + 'T' + end + ':00');
 
@@ -375,7 +394,6 @@
             let evStart = existingEvents[i].start;
             let evEnd = existingEvents[i].end;
 
-            // 只要 (新开始时间 < 老结束时间) 并且 (新结束时间 > 老开始时间)，就说明时间重叠了
             if (newStart < evEnd && newEnd > evStart) {
                 hasConflict = true;
                 break;
@@ -384,10 +402,9 @@
 
         if (hasConflict) {
             alert('⚠️ 时间冲突警告！该时间段你已经安排了其他课程，请修改时间。');
-            return; // 拦截执行，不保存
+            return; 
         }
 
-        // 如果没有冲突，正常排课
         let displayTitle = selectEl.options[selectEl.selectedIndex].text;
 
         calendar.addEvent({
