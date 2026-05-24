@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>独立家教管理系统 - 升级版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>独立家教管理系统 - 移动适配版</title>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
     <style>
         /* 全局变量和重置 */
@@ -16,74 +17,70 @@
             --text-color: #333;
             --sub-text-color: #666;
         }
-        body { margin: 0; padding: 20px; font-family: "PingFang SC", "Microsoft YaHei", Arial, sans-serif; background: var(--bg-color); height: 95vh; display: flex; color: var(--text-color); overflow: hidden;}
+        
+        /* 核心修复2：加入 box-sizing 防止内边距撑破屏幕 */
+        * { box-sizing: border-box; }
 
-        /* 布局 */
-        #wrapper { display: flex; width: 100%; height: 100%; gap: 20px;}
+        /* 核心修复3：解除 body 的高度限制，允许手机端上下滑动 */
+        body { 
+            margin: 0; 
+            padding: 15px; 
+            font-family: "PingFang SC", "Microsoft YaHei", Arial, sans-serif; 
+            background: var(--bg-color); 
+            min-height: 100vh; 
+            color: var(--text-color); 
+        }
 
-        /* 侧边栏样式 (玻璃拟态) */
+        /* 布局容器 */
+        #wrapper { 
+            display: flex; 
+            width: 100%; 
+            gap: 20px;
+            /* 默认电脑端是左右排布 (row)，如果是手机端会在下面改成上下排布 */
+            flex-direction: row; 
+            align-items: flex-start;
+        }
+
+        /* 侧边栏样式 */
         #sidebar { 
             width: 300px; 
             background: var(--sidebar-glass); 
             backdrop-filter: blur(10px); 
             -webkit-backdrop-filter: blur(10px); 
             border-radius: 15px; 
-            padding: 25px; 
+            padding: 20px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
             display: flex; 
             flex-direction: column; 
-            gap: 20px;
-            overflow-y: auto;
+            gap: 15px;
+            flex-shrink: 0; /* 防止被挤压 */
         }
-        .brand { display: flex; align-items: center; gap: 15px; margin-bottom: 20px;}
-        .brand-icon { width: 45px; height: 45px; background: conic-gradient(from 180deg at 50% 50%, #ff6b6b, #4dabf7, #66d9e8, #ff6b6b); border-radius: 50%;}
-        .brand-info h1 { font-size: 20px; margin: 0; }
+        .brand { display: flex; align-items: center; gap: 15px; margin-bottom: 10px;}
+        .brand-icon { width: 40px; height: 40px; background: conic-gradient(from 180deg at 50% 50%, #ff6b6b, #4dabf7, #66d9e8, #ff6b6b); border-radius: 50%;}
+        .brand-info h1 { font-size: 18px; margin: 0; }
         .brand-info p { font-size: 12px; margin: 0; color: var(--sub-text-color); }
 
-        .nav-links { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
-        .nav-links li { padding: 10px 15px; border-radius: 8px; cursor: pointer; color: var(--text-color); font-size: 14px; transition: background 0.2s;}
+        .nav-links { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 5px; }
+        .nav-links li { padding: 10px 15px; border-radius: 8px; cursor: pointer; font-size: 14px; transition: background 0.2s;}
         .nav-links li.active { background: rgba(92, 175, 255, 0.15); color: var(--primary-blue); font-weight: bold;}
-        .nav-links li:not(.active):hover { background: rgba(0,0,0,0.02);}
-        .nav-links li i { margin-right: 10px;} /* 占位图标 */
 
-        /* 添加课程表单卡片 (模仿粉色按钮) */
+        /* 添加课程表单 */
         .add-event-form { 
             background: rgba(255, 142, 145, 0.1); 
             border: 1px solid rgba(255, 142, 145, 0.2); 
             border-radius: 15px; 
-            padding: 20px; 
+            padding: 15px; 
             display: flex; 
             flex-direction: column; 
-            gap: 15px; 
+            gap: 10px; 
         }
-        .form-title { font-size: 16px; margin: 0; border-bottom: none;}
         .form-group { margin: 0; }
-        .form-group label { font-weight: normal; color: var(--sub-text-color); font-size: 12px;}
-        .form-group input { 
-            border: 1px solid #ddd; 
-            background: white; 
-            border-radius: 6px; 
-            padding: 8px 12px; 
-            font-size: 13px; 
-            box-shadow: inset 0 1px 3px rgba(0,0,0,0.02);
-        }
-        button { 
-            background: var(--primary-pink); 
-            border-radius: 8px; 
-            border: none; 
-            color: white; 
-            font-size: 14px; 
-            font-weight: bold; 
-            padding: 12px; 
-            cursor: pointer; 
-            width: 100%; 
-            transition: background 0.2s;
-        }
-        button:hover { background: #ff7679; }
-
-        /* 侧边栏开关 */
+        .form-group label { font-size: 12px; color: var(--sub-text-color); margin-bottom: 4px; display: block;}
+        .form-group input { width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 8px; font-size: 14px; }
+        button { background: var(--primary-pink); border-radius: 8px; border: none; color: white; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; width: 100%; }
+        
+        /* 开关样式 */
         .setting-switch { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--sub-text-color);}
-        /* 简单开关样式 */
         .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 18px; }
@@ -91,60 +88,52 @@
         input:checked + .slider { background-color: var(--primary-blue); }
         input:checked + .slider:before { transform: translateX(16px); }
 
-        /* 主日历区域 (优雅卡片) */
+        /* 主日历区域 */
         #calendar-area { 
             flex-grow: 1; 
             background: var(--card-glass); 
             border-radius: 15px; 
-            padding: 30px; 
+            padding: 20px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-            display: flex; 
-            flex-direction: column;
-            overflow: hidden;
+            width: calc(100% - 320px); /* 电脑端减去侧边栏宽度 */
         }
-        .main-header { font-size: 20px; font-weight: bold; margin: 0 0 20px 0;}
+        .main-header { font-size: 18px; font-weight: bold; margin: 0 0 15px 0;}
 
-        /* FullCalendar UI 优化核心 */
-        .fc { --fc-border-color: #f0f0f0; --fc-page-bg-color: transparent; }
-        .fc-header-toolbar { margin-bottom: 25px !important; }
-        .fc-toolbar-title { font-size: 18px !important; font-weight: 600 !important;}
-        .fc .fc-button { background: white; color: var(--text-color); border: 1px solid var(--border-color); border-radius: 6px; text-transform: none; font-size: 13px; font-weight: 500; padding: 6px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);}
-        .fc .fc-button:hover { background: #fafafa; border-color: #ccc;}
-        .fc .fc-button:active, .fc .fc-button-active { background: #f0f0f0 !important; border-color: #bbb !important; box-shadow: none !important;}
-        .fc-toolbar-chunk:first-child .fc-button-group { gap: 5px;}
-        .fc-toolbar-chunk:first-child button { border-radius: 6px !important; }
-
-        /* 关键修复：月视图单元格高度和事件排列 */
-        .fc-daygrid-day-top { padding-bottom: 5px; } /* 日期下留白 */
-        .fc .fc-daygrid-body { height: auto !important;} /* 允许自适应内容高度 */
-        .fc-daygrid-day-events { margin-top: 10px; padding: 0 5px;} /* 增加事件区域顶部间距 */
-        .fc .fc-daygrid-event { 
-            margin: 3px 0 !important; 
-            border-radius: 6px; 
-            padding: 3px 6px !important; 
-            border: none !important; 
-            background: white !important; /* 统一白色卡片风格 */
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            width: 100% !important; /* 确保占满单元格宽度 */
-        }
+        /* 日历内部 UI 优化 */
+        .fc { --fc-border-color: #eee; --fc-page-bg-color: transparent; font-size: 12px;}
+        .fc-header-toolbar { flex-wrap: wrap; gap: 10px; margin-bottom: 15px !important; }
+        .fc-toolbar-title { font-size: 16px !important; }
+        .fc .fc-button { padding: 5px 10px; font-size: 12px; }
+        .fc .fc-daygrid-event { margin: 2px 0 !important; padding: 2px 4px !important; border-radius: 4px; background: white !important; border: 1px solid #eee !important;}
         
-        /* 自定义事件卡片渲染内容 (解决 dummy 数据和显示不全) */
-        .event-card { display: flex; align-items: center; gap: 8px; font-size: 11px; width: 100%;}
-        .event-dot { width: 6px; height: 6px; border-radius: 50%; background-color: var(--primary-pink);}
-        .event-details { display: flex; flex-direction: column;}
-        .event-time-name { font-weight: bold; color: var(--text-color);}
-        .event-course { color: var(--sub-text-color);}
+        .event-card { display: flex; align-items: center; gap: 5px; font-size: 10px; width: 100%; overflow: hidden;}
+        .event-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;}
+        .event-time-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-color); font-weight: bold;}
 
-        /* 页脚细节 */
-        #footer-status { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--sub-text-color); margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;}
-        #footer-status span { display: flex; align-items: center; gap: 5px;}
-        .traffic-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary-blue);}
-        .traffic-line { flex-grow: 1; height: 3px; background: rgba(92, 175, 255, 0.2); border-radius: 3px;}
+        #footer-status { display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--sub-text-color); margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;}
+        .traffic-line { flex-grow: 1; height: 3px; background: rgba(92, 175, 255, 0.2); border-radius: 3px; margin: 0 5px;}
         .traffic-bar { width: 30%; height: 100%; background: var(--primary-blue); border-radius: 3px;}
 
+        /* ========================================= */
+        /* 核心修复4：移动端专门适配 (当屏幕宽度小于 768px 时生效) */
+        /* ========================================= */
+        @media (max-width: 768px) {
+            #wrapper { 
+                flex-direction: column; /* 变成上下堆叠 */
+                gap: 15px;
+            }
+            #sidebar { 
+                width: 100%; /* 侧边栏占满全宽 */
+            }
+            #calendar-area { 
+                width: 100%; /* 日历占满全宽 */
+                padding: 10px; /* 减小内边距省空间 */
+            }
+            /* 手机上日历顶部的按钮容易挤在一起，让它们居中显示 */
+            .fc-toolbar-chunk { display: flex; justify-content: center; width: 100%; margin-bottom: 5px;}
+            /* 隐藏占位的页脚以节省手机屏幕空间 */
+            #footer-status { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -154,63 +143,56 @@
         <div class="brand">
             <div class="brand-icon"></div>
             <div class="brand-info">
-                <h1>家教排课 / Tutor Calendar</h1>
-                <p>Tutor Service</p>
+                <h1>排课管理 / Tutor</h1>
+                <p>移动端适配版</p>
             </div>
         </div>
 
         <ul class="nav-links">
-            <li><i>📊</i> 仪表板</li>
             <li class="active"><i>📅</i> 日历主页</li>
             <li><i>📁</i> 学生档案</li>
-            <li><i>📝</i> 学生功课</li>
-            <li><i>🔒</i> 用户权限</li>
             <li><i>⚙️</i> 设置</li>
         </ul>
-
-        <p style="font-size: 11px; color: var(--sub-text-color); line-height: 1.6;">时间操作，localStcript，一个日即可选中，关闭网页数。</p>
 
         <div class="add-event-form">
             <div class="form-group">
                 <label>学生姓名:</label>
-                <input type="text" id="studentName" placeholder="例如：李小明 (初二数学)">
+                <input type="text" id="studentName" placeholder="如：李小明">
             </div>
             <div class="form-group">
                 <label>上课日期:</label>
                 <input type="date" id="classDate">
             </div>
-            <div class="form-group">
-                <label>开始时间:</label>
-                <input type="time" id="startTime" value="18:00">
+            <div style="display: flex; gap: 10px;">
+                <div class="form-group" style="flex:1;">
+                    <label>开始:</label>
+                    <input type="time" id="startTime" value="18:00">
+                </div>
+                <div class="form-group" style="flex:1;">
+                    <label>结束:</label>
+                    <input type="time" id="endTime" value="20:00">
+                </div>
             </div>
-            <div class="form-group">
-                <label>结束时间:</label>
-                <input type="time" id="endTime" value="20:00">
-            </div>
-            <button onclick="addEvent()">💾 保存排课</button>
+            <button onclick="addEvent()">💾 快捷排课</button>
         </div>
 
         <div class="setting-switch">
             <span>冲突提醒</span>
             <label class="switch"><input type="checkbox" checked><span class="slider"></span></label>
         </div>
-        <div class="setting-switch">
-            <span>微信通知</span>
-            <label class="switch"><input type="checkbox"><span class="slider"></span></label>
-        </div>
     </div>
 
     <div id="calendar-area">
-        <h2 class="main-header">月度排课视图</h2>
+        <h2 class="main-header">我的课表</h2>
         <div id='calendar'></div>
 
         <div id="footer-status">
-            <span>实时上行流量</span>
+            <span>上行</span>
             <div class="traffic-line"><div class="traffic-bar"></div></div>
-            <span>0.1 MB/S</span>
-            <span style="margin-left: 20px;">实时下行流量</span>
+            <span>0.1M</span>
+            <span>下行</span>
             <div class="traffic-line"><div class="traffic-bar" style="width:50%;"></div></div>
-            <span>0.2 MB/S</span>
+            <span>0.2M</span>
         </div>
     </div>
 </div>
@@ -218,61 +200,55 @@
 <script>
     let calendar;
 
-    // 当网页加载完毕后运行
     document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
 
-        // 从浏览器的 localStorage 读取之前保存的课程
         let savedEvents = JSON.parse(localStorage.getItem('myTutorSchedule')) || [];
 
-        // 添加一些 dummy 数据用于月视图展示效果
+        // 添加占位数据以供预览
         if (savedEvents.length === 0) {
+            let today = new Date();
+            let y = today.getFullYear();
+            let m = String(today.getMonth() + 1).padStart(2, '0');
+            let d = String(today.getDate()).padStart(2, '0');
+            let todayStr = `${y}-${m}-${d}`;
+            
             savedEvents.push(
-                { title: '18时 黄海晖', start: '2024-03-24T18:00:00', end: '2024-03-24T20:00:00', backgroundColor: '#4CAF50'},
-                { title: '18时 黄海晖', start: '2024-03-24T18:00:00', end: '2024-03-24T20:00:00', backgroundColor: '#4CAF50'},
-                { title: '18时 黄海晖', start: '2024-03-10T18:00:00', end: '2024-03-10T20:00:00', backgroundColor: '#4CAF50'},
-                { title: '18时 黄海晖', start: '2024-03-10T18:00:00', end: '2024-03-10T20:00:00', backgroundColor: '#4CAF50'},
-                { title: '18时 黄海晖', start: '2024-03-28T18:00:00', end: '2024-03-28T20:00:00', backgroundColor: '#4CAF50'},
-                { title: '18时 黄海晖', start: '2024-03-28T18:00:00', end: '2024-03-28T20:00:00', backgroundColor: '#4CAF50'},
-                { title: '18时 黄海晖', start: '2024-03-18T18:00:00', end: '2024-03-18T20:00:00', backgroundColor: '#4CAF50'},
-                { title: '18时 黄海晖', start: '2024-03-18T18:00:00', end: '2024-03-18T20:00:00', backgroundColor: '#4CAF50'}
+                { title: '18:00 小明', start: todayStr + 'T18:00:00', end: todayStr + 'T20:00:00', backgroundColor: '#5cafff'}
             );
         }
 
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth', // 默认月模式
-            locale: 'zh-cn', // 切换为中文界面
+            initialView: 'dayGridMonth',
+            locale: 'zh-cn',
+            height: 'auto', // 核心修复5：让日历高度根据内容自动撑开，防止在手机上被截断
             headerToolbar: {
                 left: 'prev,next today',
                 center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                right: 'dayGridMonth,timeGridWeek'
             },
-            buttonText: { today: 'today', month: '月', week: '周', day: '日' },
-            events: savedEvents, // 加载课
-            dayMaxEvents: true, // 允许事件堆叠
-            height: 'auto', // 关键修复：允许自适应高度以完整显示内容
-
-            // 关键自定义：将事件渲染为卡片堆叠结构，解决 dummy 数据显示
+            buttonText: { today: '今天', month: '月', week: '周' },
+            events: savedEvents,
+            
             eventContent: function(arg) {
-                let timeStr = arg.event.start.getHours() + '时';
-                let nameStr = arg.event.title.split(' ')[1] || arg.event.title;
+                let timeStr = arg.event.start.getHours() + ':' + String(arg.event.start.getMinutes()).padStart(2, '0');
+                // 提取姓名，兼容旧数据
+                let titleParts = arg.event.title.split(' ');
+                let nameStr = titleParts.length > 1 ? titleParts[1] : arg.event.title;
 
                 let cardEl = document.createElement('div');
                 cardEl.classList.add('event-card');
                 cardEl.innerHTML = `
                     <div class="event-dot" style="background-color: ${arg.event.backgroundColor || 'var(--primary-pink)'};"></div>
-                    <div class="event-details">
-                        <div class="event-time-name">${timeStr} ${nameStr}</div>
-                        </div>
+                    <div class="event-time-name">${timeStr} ${nameStr}</div>
                 `;
                 return { domNodes: [cardEl] };
             },
             
-            // 点击课程触发删除
             eventClick: function(info) {
-                if (confirm("确定要删除 【" + info.event.title + "】 的这节课吗？")) {
+                if (confirm("确定删除 【" + info.event.title + "】 吗？")) {
                     info.event.remove();
-                    saveEventsToLocal(); // 更新保存状态
+                    saveEventsToLocal();
                 }
             }
         });
@@ -280,34 +256,28 @@
         calendar.render();
     });
 
-    // 按钮点击：添加排课
     function addEvent() {
         let name = document.getElementById('studentName').value;
         let date = document.getElementById('classDate').value;
         let start = document.getElementById('startTime').value;
         let end = document.getElementById('endTime').value;
 
-        // 检查是不是没填完
         if (!name || !date || !start || !end) {
-            alert('老师，请把学生信息和时间填写完整哦！');
+            alert('请填写完整哦！');
             return;
         }
 
-        // 把课程画到日历上
         calendar.addEvent({
-            title: date.split('-')[2] + '时 ' + name, // 使用这种格式简化 dummy 数据
+            title: start + ' ' + name, 
             start: date + 'T' + start + ':00',
             end: date + 'T' + end + ':00',
-            backgroundColor: 'var(--primary-blue)', // 新课程颜色
+            backgroundColor: 'var(--primary-pink)', 
         });
 
         saveEventsToLocal();
-        
-        // 清空姓名输入框，方便录入下一个
         document.getElementById('studentName').value = '';
     }
 
-    // 把排课数据悄悄存到浏览器里
     function saveEventsToLocal() {
         let events = calendar.getEvents().map(function(e) {
             return {
