@@ -3,13 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>独立家教管理系统</title>
+    <title>独立家教管理系统 - 状态打卡版</title>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
     <style>
         /* 全局样式与变量 */
         :root {
             --primary-pink: #ff8e91;
             --primary-blue: #5cafff;
+            --status-pending: #5cafff; /* 待上课：蓝色 */
+            --status-completed: #4caf50; /* 已上课：绿色 */
+            --status-canceled: #9e9e9e; /* 请假：灰色 */
             --bg-color: linear-gradient(135deg, #eef2f3 0%, #ffe0e0 50%, #e0f2ff 100%);
             --sidebar-glass: rgba(255, 255, 255, 0.5);
             --card-glass: rgba(255, 255, 255, 0.9);
@@ -63,18 +66,9 @@
         }
         .main-header { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #eee;}
 
-        /* 统计面板样式 (已更新支持多面板，并支持手机端安全换行) */
-        .stats-panel {
-            display: flex;
-            gap: 20px;
-            background: rgba(92, 175, 255, 0.08);
-            border: 1px solid rgba(92, 175, 255, 0.2);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap; 
-        }
-        .stat-item { font-size: 13px; color: var(--sub-text-color); flex: 1; min-width: 130px;}
+        /* 统计面板 */
+        .stats-panel { display: flex; gap: 20px; background: rgba(92, 175, 255, 0.08); border: 1px solid rgba(92, 175, 255, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+        .stat-item { font-size: 13px; color: var(--sub-text-color); flex: 1;}
         .stat-value { font-size: 20px; font-weight: bold; color: var(--primary-blue); margin-top: 5px;}
         .stat-value.income { color: #ff6b6b; }
 
@@ -84,47 +78,38 @@
         .fc-toolbar-title { font-size: 16px !important; }
         .fc .fc-button { padding: 5px 10px; font-size: 12px; }
         
-        /* 终极优化：上下排布的日历卡片，彻底解决手机竖排挤压变形 */
-        .event-card { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 2px; 
-            padding: 3px 4px; 
-            font-size: 11px; 
-            width: 100%; 
-            height: 100%;
-            overflow: hidden;
-            box-sizing: border-box;
-        }
-        /* 第一行：专门放圆点和时间，保证时间水平不被切断 */
-        .event-header {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: bold;
-            white-space: nowrap; 
-        }
-        .event-dot { 
-            width: 6px; 
-            height: 6px; 
-            border-radius: 50%; 
-            flex-shrink: 0;
-        }
-        /* 第二行：专门放学生名字和科目，在剩余空间内横向铺满后自然换行 */
-        .event-title { 
-            white-space: normal; 
-            line-height: 1.3;
-            word-break: break-all; 
-        }
+        /* 核心改进：根据课程状态渲染不同的文字效果 */
+        .event-card { display: flex; align-items: center; gap: 5px; font-size: 11px; width: 100%; overflow: hidden;}
+        .event-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;}
+        .event-time-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;}
+        /* 请假状态下的文字带删除线，颜色变淡 */
+        .event-card.status-canceled-text { text-decoration: line-through; opacity: 0.6; }
 
-        /* 学生列表卡片样式 */
+        /* 学生列表卡片 */
         .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
         .student-card { background: white; border: 1px solid #eee; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); position: relative;}
         .st-name { font-size: 16px; font-weight: bold; color: var(--primary-blue); margin-bottom: 5px;}
         .st-info { font-size: 13px; color: var(--sub-text-color); margin: 3px 0; display: flex; align-items: center; gap: 5px;}
         .btn-delete { position: absolute; right: 15px; top: 15px; background: #ffebeb; color: #ff4d4f; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;}
 
-        /* 隐藏功能类 */
+        /* ======== 核心改进：自定义状态选择弹窗 ======== */
+        #statusModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
+            z-index: 9999; backdrop-filter: blur(4px);
+        }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 12px;
+        }
+        .modal-title { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 5px; color: #333; word-break: break-all;}
+        .modal-btn { padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: background 0.2s;}
+        .btn-complete { background: #e8f5e9; color: #2e7d32; } /* 已上课 */
+        .btn-cancel { background: #ffebee; color: #c62828; }   /* 请假 */
+        .btn-reset { background: #e3f2fd; color: #1565c0; }    /* 恢复待上 */
+        .btn-remove { background: #f5f5f5; color: #616161; border: 1px dashed #ccc;} /* 彻底删除 */
+        .btn-close { background: #333; color: white; margin-top: 5px;} /* 取消关闭 */
+
         .hidden { display: none !important; }
 
         /* 移动端适配 */
@@ -240,20 +225,12 @@
             
             <div class="stats-panel">
                 <div class="stat-item">
-                    当前视图总课时
+                    当前视图有效总课时 (小时)
                     <div class="stat-value" id="stat-hours">0.0</div>
                 </div>
                 <div class="stat-item">
-                    当前视图预计收入
+                    当前视图预计总收入 (元)
                     <div class="stat-value income" id="stat-fee">¥ 0.00</div>
-                </div>
-                <div class="stat-item">
-                    本月预计总收入
-                    <div class="stat-value income" id="stat-month-fee">¥ 0.00</div>
-                </div>
-                <div class="stat-item">
-                    累计历史总收入
-                    <div class="stat-value income" id="stat-total-fee">¥ 0.00</div>
                 </div>
             </div>
 
@@ -268,8 +245,21 @@
     </div>
 </div>
 
+<div id="statusModal" class="hidden">
+    <div class="modal-content">
+        <div class="modal-title" id="modalEventTitle">课程操作</div>
+        <button class="modal-btn btn-complete" onclick="setEventStatus('completed')">✅ 标记已上课 (变绿)</button>
+        <button class="modal-btn btn-cancel" onclick="setEventStatus('canceled')">❌ 学生请假 (变灰划线)</button>
+        <button class="modal-btn btn-reset" onclick="setEventStatus('pending')">📅 恢复为待上课 (变蓝)</button>
+        <button class="modal-btn btn-remove" onclick="setEventStatus('delete')">🗑️ 彻底删除这节课</button>
+        <button class="modal-btn btn-close" onclick="closeModal()">取消</button>
+    </div>
+</div>
+
 <script>
     let calendar;
+    let currentClickedEvent = null; // 暂存当前点击的课程对象
+    
     // 数据读取
     let eventsData = JSON.parse(localStorage.getItem('myTutorEvents')) || [];
     let studentsData = JSON.parse(localStorage.getItem('myTutorStudents')) || [];
@@ -296,52 +286,38 @@
 
         if(tabName === 'calendar' && calendar) {
             calendar.render();
-            refreshStats(); // 切换回日历时刷新金额
+            refreshStats();
         }
     }
 
-    // ================== 统计计算逻辑 ==================
+    // ================== 统计计算逻辑 (联动状态拦截) ==================
     function refreshStats(calInstance) {
         let cal = calInstance || calendar;
         if (!cal) return;
 
         let viewStart = cal.view.activeStart;
         let viewEnd = cal.view.activeEnd;
-        let allEvents = cal.getEvents(); 
+        let currentEvents = cal.getEvents();
         
-        let viewHours = 0;
-        let viewFee = 0;
-        let monthFee = 0;
+        let totalHours = 0;
         let totalFee = 0;
 
-        let currentCalDate = cal.getDate();
-        let currentMonth = currentCalDate.getMonth();
-        let currentYear = currentCalDate.getFullYear();
-
-        allEvents.forEach(ev => {
-            let durationHours = (ev.end - ev.start) / (1000 * 60 * 60);
-            let price = parseFloat(ev.extendedProps.price) || 0;
-            let fee = durationHours * price;
-
-            // 1. 累计总计
-            totalFee += fee;
-
-            // 2. 本月预计
-            if (ev.start.getMonth() === currentMonth && ev.start.getFullYear() === currentYear) {
-                monthFee += fee;
-            }
-
-            // 3. 视图范围内
+        currentEvents.forEach(ev => {
+            // 筛选屏幕范围内的课程
             if (ev.start >= viewStart && ev.start < viewEnd) {
-                viewHours += durationHours;
-                viewFee += fee;
+                // 核心改进：如果课程状态是请假 (canceled)，则不计入财务统计
+                let status = ev.extendedProps.status || 'pending';
+                if (status !== 'canceled') {
+                    let durationHours = (ev.end - ev.start) / (1000 * 60 * 60);
+                    let price = parseFloat(ev.extendedProps.price) || 0; 
+                    totalHours += durationHours;
+                    totalFee += (durationHours * price);
+                }
             }
         });
 
-        document.getElementById('stat-hours').innerText = viewHours.toFixed(1);
-        document.getElementById('stat-fee').innerText = '¥ ' + viewFee.toFixed(2);
-        document.getElementById('stat-month-fee').innerText = '¥ ' + monthFee.toFixed(2);
-        document.getElementById('stat-total-fee').innerText = '¥ ' + totalFee.toFixed(2);
+        document.getElementById('stat-hours').innerText = totalHours.toFixed(1);
+        document.getElementById('stat-fee').innerText = '¥ ' + totalFee.toFixed(2);
     }
 
     // ================== 学生档案管理逻辑 ==================
@@ -427,13 +403,12 @@
         });
     }
 
-    // ================== 日历排课逻辑 ==================
+    // ================== 日历排课与打卡联动逻辑 ==================
     function initCalendar() {
         var calendarEl = document.getElementById('calendar');
 
         calendar = new FullCalendar.Calendar(calendarEl, {
-            // 手机端尺寸下默认贴心地使用“日视图”避免过于拥挤，PC端依旧默认是“周视图”
-            initialView: window.innerWidth <= 768 ? 'timeGridDay' : 'timeGridWeek',
+            initialView: 'timeGridWeek',
             locale: 'zh-cn',
             height: 'auto', 
             slotMinTime: '08:00:00',
@@ -451,36 +426,73 @@
                 refreshStats(info.view.calendar);
             },
             
+            // 核心改进：根据不同的状态渲染颜色和文字线条
             eventContent: function(arg) {
                 let timeStr = arg.event.start.getHours() + ':' + String(arg.event.start.getMinutes()).padStart(2, '0');
                 let nameStr = arg.event.title;
+                let status = arg.event.extendedProps.status || 'pending';
                 
+                // 确定小圆点的颜色
+                let dotColor = 'var(--status-pending)';
+                let cardClass = 'event-card';
+                if(status === 'completed') dotColor = 'var(--status-completed)';
+                if(status === 'canceled') {
+                    dotColor = 'var(--status-canceled)';
+                    cardClass = 'event-card status-canceled-text'; // 加入删除线样式
+                }
+
                 let cardEl = document.createElement('div');
-                cardEl.classList.add('event-card');
+                cardEl.className = cardClass;
                 cardEl.innerHTML = `
-                    <div class="event-header">
-                        <div class="event-dot" style="background-color: var(--primary-pink);"></div>
-                        <span>${timeStr}</span>
-                    </div>
-                    <div class="event-title">${nameStr}</div>
+                    <div class="event-dot" style="background-color: ${dotColor};"></div>
+                    <div class="event-time-name">${timeStr} ${nameStr}</div>
                 `;
                 return { domNodes: [cardEl] };
             },
             
+            // 点击课程不再直接删除，而是弹出状态打卡面板
             eventClick: function(info) {
-                let startStr = info.event.start.getHours() + ':' + String(info.event.start.getMinutes()).padStart(2, '0');
-                let endStr = info.event.end.getHours() + ':' + String(info.event.end.getMinutes()).padStart(2, '0');
-                
-                let confirmMsg = `📚 学生: ${info.event.title}\n⏰ 时间: ${startStr} - ${endStr}\n\n确定要删除这节排课吗？`;
-                
-                if (confirm(confirmMsg)) {
-                    info.event.remove();
-                    saveEventsToLocal();
-                    refreshStats();
-                }
+                currentClickedEvent = info.event;
+                document.getElementById('modalEventTitle').innerText = "操作课程：" + info.event.title;
+                document.getElementById('statusModal').classList.remove('hidden');
             }
         });
         calendar.render();
+    }
+
+    // 处理打卡状态选择
+    function setEventStatus(status) {
+        if (!currentClickedEvent) return;
+
+        if (status === 'delete') {
+            if (confirm("确定要彻底删除 【" + currentClickedEvent.title + "】 的排课吗？")) {
+                currentClickedEvent.remove();
+            }
+        } else {
+            // 改变状态属性
+            currentClickedEvent.setExtendedProp('status', status);
+            
+            // 改变区块背景色以配合全表直观度
+            if(status === 'pending') {
+                currentClickedEvent.setProp('backgroundColor', 'var(--status-pending)');
+                currentClickedEvent.setProp('borderColor', 'var(--status-pending)');
+            } else if(status === 'completed') {
+                currentClickedEvent.setProp('backgroundColor', 'rgba(76, 175, 80, 0.2)'); // 浅绿背景
+                currentClickedEvent.setProp('borderColor', 'var(--status-completed)');
+            } else if(status === 'canceled') {
+                currentClickedEvent.setProp('backgroundColor', 'rgba(158, 158, 158, 0.1)'); // 浅灰背景
+                currentClickedEvent.setProp('borderColor', 'var(--status-canceled)');
+            }
+        }
+
+        saveEventsToLocal();
+        refreshStats();
+        closeModal();
+    }
+
+    function closeModal() {
+        document.getElementById('statusModal').classList.add('hidden');
+        currentClickedEvent = null;
     }
 
     function addEvent() {
@@ -514,15 +526,19 @@
         for (let i = 0; i < existingEvents.length; i++) {
             let evStart = existingEvents[i].start;
             let evEnd = existingEvents[i].end;
+            let evStatus = existingEvents[i].extendedProps.status || 'pending';
 
-            if (newStart < evEnd && newEnd > evStart) {
-                hasConflict = true;
-                break;
+            // 核心改进：如果对方请假了，那么这个时间段就不算冲突，你可以安排别人上课！
+            if (evStatus !== 'canceled') {
+                if (newStart < evEnd && newEnd > evStart) {
+                    hasConflict = true;
+                    break;
+                }
             }
         }
 
         if (hasConflict) {
-            alert('⚠️ 时间冲突警告！该时间段你已经安排了其他课程，请修改时间。');
+            alert('⚠️ 时间冲突警告！该时间段你已经安排了其他有效课程，请修改时间。');
             return; 
         }
 
@@ -534,12 +550,16 @@
             title: displayTitle, 
             start: date + 'T' + start + ':00',
             end: date + 'T' + end + ':00',
-            backgroundColor: 'var(--primary-pink)',
-            extendedProps: { price: studentPrice }
+            backgroundColor: 'var(--status-pending)', // 默认蓝色
+            borderColor: 'var(--status-pending)',
+            extendedProps: { 
+                price: studentPrice,
+                status: 'pending' // 默认初始状态：待上课
+            }
         });
 
         saveEventsToLocal();
-        refreshStats(); 
+        refreshStats();
         alert('排课成功！');
     }
 
@@ -549,7 +569,10 @@
                 title: e.title,
                 start: e.startStr,
                 end: e.endStr,
-                price: e.extendedProps.price
+                price: e.extendedProps.price,
+                status: e.extendedProps.status || 'pending',
+                backgroundColor: e.backgroundColor,
+                borderColor: e.borderColor
             };
         });
         localStorage.setItem('myTutorEvents', JSON.stringify(events));
