@@ -63,7 +63,7 @@
         }
         .main-header { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #eee;}
 
-        /* 新增：统计面板样式 */
+        /* 统计面板样式 (已更新支持多面板) */
         .stats-panel {
             display: flex;
             gap: 20px;
@@ -72,8 +72,9 @@
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 15px;
+            flex-wrap: wrap; 
         }
-        .stat-item { font-size: 13px; color: var(--sub-text-color); flex: 1;}
+        .stat-item { font-size: 13px; color: var(--sub-text-color); flex: 1; min-width: 130px;}
         .stat-value { font-size: 20px; font-weight: bold; color: var(--primary-blue); margin-top: 5px;}
         .stat-value.income { color: #ff6b6b; }
 
@@ -209,12 +210,20 @@
             
             <div class="stats-panel">
                 <div class="stat-item">
-                    当前视图总课时 (小时)
+                    当前视图总课时
                     <div class="stat-value" id="stat-hours">0.0</div>
                 </div>
                 <div class="stat-item">
-                    当前视图预计总收入 (元)
+                    当前视图预计收入
                     <div class="stat-value income" id="stat-fee">¥ 0.00</div>
+                </div>
+                <div class="stat-item">
+                    本月预计总收入
+                    <div class="stat-value income" id="stat-month-fee">¥ 0.00</div>
+                </div>
+                <div class="stat-item">
+                    累计历史总收入
+                    <div class="stat-value income" id="stat-total-fee">¥ 0.00</div>
                 </div>
             </div>
 
@@ -261,32 +270,48 @@
         }
     }
 
-    // ================== 统计计算逻辑 (修复了Bug的核心部分) ==================
+    // ================== 统计计算逻辑 (全面升级) ==================
     function refreshStats(calInstance) {
-        // 安全检查：如果日历还没准备好，直接拦截，防止报错死机
         let cal = calInstance || calendar;
         if (!cal) return;
 
         let viewStart = cal.view.activeStart;
         let viewEnd = cal.view.activeEnd;
-        let currentEvents = cal.getEvents();
+        let allEvents = cal.getEvents(); 
         
-        let totalHours = 0;
+        let viewHours = 0;
+        let viewFee = 0;
+        let monthFee = 0;
         let totalFee = 0;
 
-        currentEvents.forEach(ev => {
-            // 筛选当前屏幕范围内的课程
+        let currentCalDate = cal.getDate();
+        let currentMonth = currentCalDate.getMonth();
+        let currentYear = currentCalDate.getFullYear();
+
+        allEvents.forEach(ev => {
+            let durationHours = (ev.end - ev.start) / (1000 * 60 * 60);
+            let price = parseFloat(ev.extendedProps.price) || 0;
+            let fee = durationHours * price;
+
+            // 1. 累计总计
+            totalFee += fee;
+
+            // 2. 本月预计
+            if (ev.start.getMonth() === currentMonth && ev.start.getFullYear() === currentYear) {
+                monthFee += fee;
+            }
+
+            // 3. 视图范围内
             if (ev.start >= viewStart && ev.start < viewEnd) {
-                let durationHours = (ev.end - ev.start) / (1000 * 60 * 60);
-                // 安全获取价格，兼容旧数据
-                let price = parseFloat(ev.extendedProps.price) || 0; 
-                totalHours += durationHours;
-                totalFee += (durationHours * price);
+                viewHours += durationHours;
+                viewFee += fee;
             }
         });
 
-        document.getElementById('stat-hours').innerText = totalHours.toFixed(1);
-        document.getElementById('stat-fee').innerText = '¥ ' + totalFee.toFixed(2);
+        document.getElementById('stat-hours').innerText = viewHours.toFixed(1);
+        document.getElementById('stat-fee').innerText = '¥ ' + viewFee.toFixed(2);
+        document.getElementById('stat-month-fee').innerText = '¥ ' + monthFee.toFixed(2);
+        document.getElementById('stat-total-fee').innerText = '¥ ' + totalFee.toFixed(2);
     }
 
     // ================== 学生档案管理逻辑 ==================
@@ -391,7 +416,6 @@
             buttonText: { month: '月', week: '周', day: '日' },
             events: eventsData,
             
-            // 每次切换日期、滑动时触发算钱 (安全传入当前日历实例)
             datesSet: function(info) {
                 refreshStats(info.view.calendar);
             },
@@ -412,7 +436,7 @@
                 if (confirm("确定删除 【" + info.event.title + "】 的排课吗？")) {
                     info.event.remove();
                     saveEventsToLocal();
-                    refreshStats(); // 删除后刷新费用
+                    refreshStats();
                 }
             }
         });
@@ -475,7 +499,7 @@
         });
 
         saveEventsToLocal();
-        refreshStats(); // 加课后刷新费用
+        refreshStats(); 
         alert('排课成功！');
     }
 
