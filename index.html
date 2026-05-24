@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>独立家教管理系统 - 稳定计费版</title>
+    <title>独立家教管理系统</title>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
     <style>
         /* 全局样式与变量 */
@@ -63,7 +63,7 @@
         }
         .main-header { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #eee;}
 
-        /* 统计面板样式 (已更新支持多面板) */
+        /* 统计面板样式 (已更新支持多面板，并支持手机端安全换行) */
         .stats-panel {
             display: flex;
             gap: 20px;
@@ -72,7 +72,7 @@
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 15px;
-            flex-wrap: wrap; /* 允许换行以适应四个数据框 */
+            flex-wrap: wrap; 
         }
         .stat-item { font-size: 13px; color: var(--sub-text-color); flex: 1; min-width: 130px;}
         .stat-value { font-size: 20px; font-weight: bold; color: var(--primary-blue); margin-top: 5px;}
@@ -84,30 +84,37 @@
         .fc-toolbar-title { font-size: 16px !important; }
         .fc .fc-button { padding: 5px 10px; font-size: 12px; }
         
-        /* 改进后的日历卡片样式 (适应手机端换行) */
+        /* 终极优化：上下排布的日历卡片，彻底解决手机竖排挤压变形 */
         .event-card { 
             display: flex; 
-            align-items: flex-start; /* 顶部对齐，防止文字多行时圆点居中 */
-            gap: 4px; 
-            padding: 2px 4px; 
+            flex-direction: column; 
+            gap: 2px; 
+            padding: 3px 4px; 
             font-size: 11px; 
             width: 100%; 
             height: 100%;
             overflow: hidden;
             box-sizing: border-box;
         }
+        /* 第一行：专门放圆点和时间，保证时间水平不被切断 */
+        .event-header {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: bold;
+            white-space: nowrap; 
+        }
         .event-dot { 
             width: 6px; 
             height: 6px; 
             border-radius: 50%; 
             flex-shrink: 0;
-            margin-top: 4px; /* 和第一行文字对齐 */
         }
-        .event-time-name { 
-            white-space: normal; /* 允许文字向下换行 */
-            word-break: break-all; /* 在手机极窄列中强制断字换行 */
-            font-weight: bold;
+        /* 第二行：专门放学生名字和科目，在剩余空间内横向铺满后自然换行 */
+        .event-title { 
+            white-space: normal; 
             line-height: 1.3;
+            word-break: break-all; 
         }
 
         /* 学生列表卡片样式 */
@@ -289,7 +296,7 @@
 
         if(tabName === 'calendar' && calendar) {
             calendar.render();
-            refreshStats(); // 切换回日历时刷新钱数
+            refreshStats(); // 切换回日历时刷新金额
         }
     }
 
@@ -425,7 +432,7 @@
         var calendarEl = document.getElementById('calendar');
 
         calendar = new FullCalendar.Calendar(calendarEl, {
-            // 手机端默认显示日视图，电脑端默认显示周视图
+            // 手机端尺寸下默认贴心地使用“日视图”避免过于拥挤，PC端依旧默认是“周视图”
             initialView: window.innerWidth <= 768 ? 'timeGridDay' : 'timeGridWeek',
             locale: 'zh-cn',
             height: 'auto', 
@@ -447,11 +454,15 @@
             eventContent: function(arg) {
                 let timeStr = arg.event.start.getHours() + ':' + String(arg.event.start.getMinutes()).padStart(2, '0');
                 let nameStr = arg.event.title;
+                
                 let cardEl = document.createElement('div');
                 cardEl.classList.add('event-card');
                 cardEl.innerHTML = `
-                    <div class="event-dot" style="background-color: var(--primary-pink);"></div>
-                    <div class="event-time-name">${timeStr} ${nameStr}</div>
+                    <div class="event-header">
+                        <div class="event-dot" style="background-color: var(--primary-pink);"></div>
+                        <span>${timeStr}</span>
+                    </div>
+                    <div class="event-title">${nameStr}</div>
                 `;
                 return { domNodes: [cardEl] };
             },
