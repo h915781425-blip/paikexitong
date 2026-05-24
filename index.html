@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>独立家教管理系统 - 联动版</title>
+    <title>独立家教管理系统 - 防冲突版</title>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
     <style>
         /* 全局样式与变量 */
@@ -46,8 +46,9 @@
         .form-group { margin: 0; }
         .form-group label { font-size: 12px; color: var(--sub-text-color); margin-bottom: 6px; display: block;}
         .form-group input, .form-group select { width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 10px; font-size: 14px; background: white;}
-        button.btn-pink { background: var(--primary-pink); border-radius: 8px; border: none; color: white; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; width: 100%; }
-        button.btn-blue { background: var(--primary-blue); border-radius: 8px; border: none; color: white; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; width: 100%; }
+        button.btn-pink { background: var(--primary-pink); border-radius: 8px; border: none; color: white; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; width: 100%; transition: opacity 0.2s;}
+        button.btn-blue { background: var(--primary-blue); border-radius: 8px; border: none; color: white; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; width: 100%; transition: opacity 0.2s;}
+        button:active { opacity: 0.8; }
 
         /* ======== 右侧主内容区域 ======== */
         #main-content { 
@@ -133,10 +134,30 @@
                 <label>学生姓名:</label>
                 <input type="text" id="stName" placeholder="如：李小明">
             </div>
+            
             <div class="form-group">
-                <label>辅导科目:</label>
-                <input type="text" id="stSubject" placeholder="如：初二数学">
+                <label>辅导阶段及科目:</label>
+                <div style="display: flex; gap: 10px;">
+                    <select id="stGrade" style="flex: 1;">
+                        <option value="小学">小学</option>
+                        <option value="初中">初中</option>
+                        <option value="高中">高中</option>
+                    </select>
+                    <select id="stSubjectName" style="flex: 1.2;">
+                        <option value="语文">语文</option>
+                        <option value="数学" selected>数学</option>
+                        <option value="英语">英语</option>
+                        <option value="物理">物理</option>
+                        <option value="化学">化学</option>
+                        <option value="生物">生物</option>
+                        <option value="政治">政治</option>
+                        <option value="历史">历史</option>
+                        <option value="地理">地理</option>
+                        <option value="全科">全科</option>
+                    </select>
+                </div>
             </div>
+
             <div class="form-group">
                 <label>课时单价 (元):</label>
                 <input type="number" id="stPrice" placeholder="如：150">
@@ -177,22 +198,18 @@
 
     // ================== 页面切换逻辑 ==================
     function switchTab(tabName) {
-        // 更改菜单高亮
         document.getElementById('tab-calendar').classList.remove('active');
         document.getElementById('tab-students').classList.remove('active');
         document.getElementById('tab-' + tabName).classList.add('active');
 
-        // 切换侧边栏表单
         document.getElementById('form-calendar').classList.add('hidden');
         document.getElementById('form-students').classList.add('hidden');
         document.getElementById('form-' + tabName).classList.remove('hidden');
 
-        // 切换主内容区
         document.getElementById('page-calendar').classList.add('hidden');
         document.getElementById('page-students').classList.add('hidden');
         document.getElementById('page-' + tabName).classList.remove('hidden');
 
-        // 如果切回日历，需要重新渲染一次防止变形
         if(tabName === 'calendar' && calendar) {
             calendar.render();
         }
@@ -201,19 +218,23 @@
     // ================== 学生档案管理逻辑 ==================
     function saveStudent() {
         let name = document.getElementById('stName').value.trim();
-        let subject = document.getElementById('stSubject').value.trim();
+        let grade = document.getElementById('stGrade').value;
+        let subjectName = document.getElementById('stSubjectName').value;
         let price = document.getElementById('stPrice').value.trim();
         let address = document.getElementById('stAddress').value.trim();
 
-        if (!name || !subject) {
-            alert("姓名和科目是必填项哦！");
+        if (!name) {
+            alert("学生姓名是必填项哦！");
             return;
         }
 
+        // 组合科目，例如：高中物理
+        let fullSubject = grade + subjectName;
+
         let newStudent = {
-            id: Date.now().toString(), // 生成唯一ID
+            id: Date.now().toString(),
             name: name,
-            subject: subject,
+            subject: fullSubject,
             price: price,
             address: address
         };
@@ -221,13 +242,10 @@
         studentsData.push(newStudent);
         localStorage.setItem('myTutorStudents', JSON.stringify(studentsData));
         
-        // 清空输入框
         document.getElementById('stName').value = '';
-        document.getElementById('stSubject').value = '';
         document.getElementById('stPrice').value = '';
         document.getElementById('stAddress').value = '';
 
-        // 更新列表和下拉框
         renderStudentList();
         updateStudentDropdown();
         alert("学生添加成功！");
@@ -244,7 +262,7 @@
 
     function renderStudentList() {
         let listDiv = document.getElementById('student-list');
-        listDiv.innerHTML = ''; // 清空重新渲染
+        listDiv.innerHTML = '';
 
         if(studentsData.length === 0) {
             listDiv.innerHTML = '<p style="color:#999; font-size:14px;">暂无学生档案，请在左侧添加。</p>';
@@ -267,7 +285,7 @@
 
     function updateStudentDropdown() {
         let select = document.getElementById('eventStudentId');
-        select.innerHTML = ''; // 清空
+        select.innerHTML = '';
 
         if(studentsData.length === 0) {
             select.innerHTML = '<option value="">请先在[学生档案]添加</option>';
@@ -276,27 +294,24 @@
 
         studentsData.forEach(st => {
             let opt = document.createElement('option');
-            opt.value = st.name; // 这里直接把名字存到日历里比较直观
+            opt.value = st.name; 
             opt.text = `${st.name} (${st.subject})`;
             select.appendChild(opt);
         });
     }
 
 
-    // ================== 日历排课逻辑 ==================
+    // ================== 日历排课与防冲突逻辑 ==================
     function initCalendar() {
         var calendarEl = document.getElementById('calendar');
 
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridWeek', // 默认打开周视图
+            initialView: 'timeGridWeek',
             locale: 'zh-cn',
             height: 'auto', 
-            
-            // 核心改进：限制时间显示范围 08:00 - 21:00
             slotMinTime: '08:00:00',
             slotMaxTime: '21:00:00',
-            allDaySlot: false, // 隐藏全天槽位省空间
-
+            allDaySlot: false, 
             headerToolbar: {
                 left: 'prev,next',
                 center: 'title',
@@ -344,7 +359,35 @@
             return;
         }
 
-        // 拼接标题，直接把下拉框里的选中的文字作为排课标题
+        // 核心改进：冲突检测逻辑
+        let newStart = new Date(date + 'T' + start + ':00');
+        let newEnd = new Date(date + 'T' + end + ':00');
+
+        if (newStart >= newEnd) {
+            alert('结束时间必须晚于开始时间哦！');
+            return;
+        }
+
+        let existingEvents = calendar.getEvents();
+        let hasConflict = false;
+
+        for (let i = 0; i < existingEvents.length; i++) {
+            let evStart = existingEvents[i].start;
+            let evEnd = existingEvents[i].end;
+
+            // 只要 (新开始时间 < 老结束时间) 并且 (新结束时间 > 老开始时间)，就说明时间重叠了
+            if (newStart < evEnd && newEnd > evStart) {
+                hasConflict = true;
+                break;
+            }
+        }
+
+        if (hasConflict) {
+            alert('⚠️ 时间冲突警告！该时间段你已经安排了其他课程，请修改时间。');
+            return; // 拦截执行，不保存
+        }
+
+        // 如果没有冲突，正常排课
         let displayTitle = selectEl.options[selectEl.selectedIndex].text;
 
         calendar.addEvent({
@@ -355,6 +398,7 @@
         });
 
         saveEventsToLocal();
+        alert('排课成功！');
     }
 
     function saveEventsToLocal() {
