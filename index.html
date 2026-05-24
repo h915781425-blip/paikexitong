@@ -72,7 +72,7 @@
             padding: 15px;
             border-radius: 10px;
             margin-bottom: 15px;
-            flex-wrap: wrap; 
+            flex-wrap: wrap; /* 允许换行以适应四个数据框 */
         }
         .stat-item { font-size: 13px; color: var(--sub-text-color); flex: 1; min-width: 130px;}
         .stat-value { font-size: 20px; font-weight: bold; color: var(--primary-blue); margin-top: 5px;}
@@ -83,9 +83,32 @@
         .fc-header-toolbar { flex-wrap: wrap; gap: 10px; margin-bottom: 15px !important; }
         .fc-toolbar-title { font-size: 16px !important; }
         .fc .fc-button { padding: 5px 10px; font-size: 12px; }
-        .event-card { display: flex; align-items: center; gap: 5px; font-size: 11px; width: 100%; overflow: hidden;}
-        .event-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;}
-        .event-time-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;}
+        
+        /* 改进后的日历卡片样式 (适应手机端换行) */
+        .event-card { 
+            display: flex; 
+            align-items: flex-start; /* 顶部对齐，防止文字多行时圆点居中 */
+            gap: 4px; 
+            padding: 2px 4px; 
+            font-size: 11px; 
+            width: 100%; 
+            height: 100%;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .event-dot { 
+            width: 6px; 
+            height: 6px; 
+            border-radius: 50%; 
+            flex-shrink: 0;
+            margin-top: 4px; /* 和第一行文字对齐 */
+        }
+        .event-time-name { 
+            white-space: normal; /* 允许文字向下换行 */
+            word-break: break-all; /* 在手机极窄列中强制断字换行 */
+            font-weight: bold;
+            line-height: 1.3;
+        }
 
         /* 学生列表卡片样式 */
         .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
@@ -270,7 +293,7 @@
         }
     }
 
-    // ================== 统计计算逻辑 (全面升级) ==================
+    // ================== 统计计算逻辑 ==================
     function refreshStats(calInstance) {
         let cal = calInstance || calendar;
         if (!cal) return;
@@ -402,7 +425,8 @@
         var calendarEl = document.getElementById('calendar');
 
         calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridWeek',
+            // 手机端默认显示日视图，电脑端默认显示周视图
+            initialView: window.innerWidth <= 768 ? 'timeGridDay' : 'timeGridWeek',
             locale: 'zh-cn',
             height: 'auto', 
             slotMinTime: '08:00:00',
@@ -433,7 +457,12 @@
             },
             
             eventClick: function(info) {
-                if (confirm("确定删除 【" + info.event.title + "】 的排课吗？")) {
+                let startStr = info.event.start.getHours() + ':' + String(info.event.start.getMinutes()).padStart(2, '0');
+                let endStr = info.event.end.getHours() + ':' + String(info.event.end.getMinutes()).padStart(2, '0');
+                
+                let confirmMsg = `📚 学生: ${info.event.title}\n⏰ 时间: ${startStr} - ${endStr}\n\n确定要删除这节排课吗？`;
+                
+                if (confirm(confirmMsg)) {
                     info.event.remove();
                     saveEventsToLocal();
                     refreshStats();
