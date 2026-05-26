@@ -3,569 +3,591 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>独立家教管理系统</title>
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js'></script>
+    <title>汇率计算器 - Ultimate 3D Glass</title>
     <style>
-        /* 全局样式与变量 */
+        /* ================= 全局重置与设计变量 ================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        
         :root {
-            --primary-pink: #ff8e91;
-            --primary-blue: #5cafff;
-            --status-pending: #5cafff; 
-            --status-completed: #4caf50; 
-            --status-canceled: #757575; 
-            --bg-color: linear-gradient(135deg, #eef2f3 0%, #ffe0e0 50%, #e0f2ff 100%);
-            --sidebar-glass: rgba(255, 255, 255, 0.5);
-            --card-glass: rgba(255, 255, 255, 0.9);
-            --text-color: #333;
-            --sub-text-color: #666;
-        }
-        * { box-sizing: border-box; font-family: "PingFang SC", "Microsoft YaHei", sans-serif; }
-        body { margin: 0; padding: 15px; background: var(--bg-color); min-height: 100vh; color: var(--text-color); }
+            /* 主题紫罗兰色与发光参数 */
+            --primary: #6b5aed;
+            --primary-grad: linear-gradient(135deg, #8176ff 0%, #5648ed 100%);
+            --primary-glow: 0 12px 24px -4px rgba(86, 72, 237, 0.55), 0 6px 12px -2px rgba(86, 72, 237, 0.4);
+            
+            /* 辅色薄荷青与发光参数 */
+            --secondary: #3bc2ad;
+            --secondary-grad: linear-gradient(135deg, #9af2e4 0%, #4bc4b4 100%);
+            --secondary-glow: 0 12px 24px -4px rgba(75, 196, 180, 0.5), 0 6px 12px -2px rgba(75, 196, 180, 0.3);
+            
+            /* 🔥 3D 实体玻璃核心模具 🔥 */
+            --glass-surface: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.3) 100%);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.5);
+            --glass-edge-light: 1.5px solid rgba(255, 255, 255, 1); /* 模拟左上角的锐利高光切边 */
+            
+            /* 组合阴影：底部悬浮投影 + 底部接触投影 + 内部受光面白高光 + 内部背光面暗厚度 */
+            --btn-shadow: 
+                0 8px 16px -4px rgba(0, 0, 0, 0.08), 
+                0 4px 6px -2px rgba(0, 0, 0, 0.04),
+                inset 2px 3px 5px rgba(255, 255, 255, 0.9), 
+                inset -2px -3px 5px rgba(0, 0, 0, 0.05);
+                
+            /* 按下时的阴影：整体向内凹陷 */
+            --btn-shadow-active: 
+                0 2px 4px -2px rgba(0, 0, 0, 0.04), 
+                inset 3px 4px 8px rgba(0, 0, 0, 0.08), 
+                inset -2px -2px 4px rgba(255, 255, 255, 0.5);
 
-        /* 布局容器 */
-        #wrapper { display: flex; gap: 20px; align-items: flex-start; }
-
-        /* ======== 侧边栏/顶部区域 ======== */
-        #sidebar { 
-            width: 300px; 
-            background: var(--sidebar-glass); 
-            backdrop-filter: blur(10px); 
-            border-radius: 15px; 
-            padding: 20px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-            flex-shrink: 0; 
+            --text-main: #2d3748;
+            --text-sub: #718096;
         }
-        .brand { display: flex; align-items: center; gap: 15px; margin-bottom: 15px;}
-        .brand-icon { width: 40px; height: 40px; background: conic-gradient(from 180deg at 50% 50%, #ff6b6b, #4dabf7, #66d9e8, #ff6b6b); border-radius: 50%;}
-        .brand-info h1 { font-size: 18px; margin: 0; }
+
+        /* 底部桌面：稍微偏冷的银灰色，给玻璃提供折射源 */
+        body {
+            background-color: #dbe4ef;
+            color: var(--text-main);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh;
+            padding: 16px; /* 重点：留白！让手机端四周也能露出背景，体现这块亚克力板是“悬浮放置”的 */
+            position: relative; overflow-x: hidden;
+        }
+
+        /* 环境漫反射光球 (制造彩色折射源) */
+        .ambient-orbs { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1; overflow: hidden; }
+        .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.6; }
+        .orb-1 { top: -10%; left: -10%; width: 450px; height: 450px; background: #8176ff; }
+        .orb-2 { bottom: -10%; right: -10%; width: 450px; height: 450px; background: #3ccab5; }
+        .orb-3 { top: 40%; left: 50%; width: 350px; height: 350px; background: rgba(255, 182, 193, 0.4); }
+
+        /* ================= 核心：整块加厚的亚克力主板 ================= */
+        .app-container {
+            width: 100%; max-width: 440px; min-height: calc(100vh - 32px);
+            /* 玻璃材质基础 */
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.1) 100%);
+            backdrop-filter: blur(40px) saturate(130%); -webkit-backdrop-filter: blur(40px) saturate(130%);
+            border-radius: 40px; padding: 28px 24px; position: relative; z-index: 1;
+            
+            /* 雕刻亚克力板的物理边缘：左上亮，右下暗 */
+            border: var(--glass-border);
+            border-top: var(--glass-edge-light); border-left: var(--glass-edge-light);
+            
+            /* 巨型悬浮阴影 + 亚克力内部边缘折射 */
+            box-shadow: 
+                0 40px 80px -10px rgba(0, 0, 0, 0.15), 
+                inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+            
+            display: flex; flex-direction: column; overflow: hidden; /* 必须加，用来裁切表面的斜向反光 */
+        }
         
-        .nav-links { list-style: none; padding: 0; margin: 0 0 20px 0; display: flex; flex-direction: column; gap: 5px; }
-        .nav-links li { padding: 12px 15px; border-radius: 8px; cursor: pointer; font-size: 15px; transition: 0.2s; color: var(--sub-text-color);}
-        .nav-links li.active { background: rgba(92, 175, 255, 0.15); color: var(--primary-blue); font-weight: bold;}
+        @media (min-width: 500px) { .app-container { min-height: 800px; margin: 20px 0; } }
 
-        /* 表单通用样式 */
-        .glass-form { background: rgba(255, 142, 145, 0.1); border: 1px solid rgba(255, 142, 145, 0.2); border-radius: 12px; padding: 15px; display: flex; flex-direction: column; gap: 12px; }
-        .glass-form.blue-theme { background: rgba(92, 175, 255, 0.1); border-color: rgba(92, 175, 255, 0.2); }
-        .form-group { margin: 0; }
-        .form-group label { font-size: 12px; color: var(--sub-text-color); margin-bottom: 6px; display: block;}
-        .form-group input, .form-group select { width: 100%; border: 1px solid #ddd; border-radius: 6px; padding: 10px; font-size: 14px; background: white;}
-        select optgroup { font-weight: bold; color: var(--primary-blue); font-style: normal; }
+        /* 🔥 神来之笔：亚克力板表面的斜向大反光 (Glare) 🔥 */
+        .app-container::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: linear-gradient(
+                115deg, transparent 35%, 
+                rgba(255, 255, 255, 0.4) 45%, 
+                rgba(255, 255, 255, 0.05) 50%, transparent 55%
+            );
+            pointer-events: none; z-index: 0;
+        }
+        .app-container > * { position: relative; z-index: 1; } /* 保证内容不被反光层挡住 */
+
+        /* ================= 汇率信息区 (向内挖空的凹陷托盘) ================= */
+        .rate-card {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 28px; padding: 20px; margin-bottom: 24px;
+            /* 和凸起的按键相反，这里用深色内阴影做出向下挖槽的凹陷感 */
+            border-top: 1px solid rgba(0, 0, 0, 0.04); border-left: 1px solid rgba(0, 0, 0, 0.04);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.6); border-right: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: inset 2px 3px 8px rgba(0, 0, 0, 0.04);
+        }
+        .rate-current-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .rate-input-group { display: flex; align-items: center; gap: 10px; }
+        .rate-input-group label { font-size: 15px; font-weight: 800; text-shadow: 0 1px 1px #fff; }
+
+        /* 输入框 (模拟原图 Search bar 的凹槽药丸) */
+        .rate-input-group input {
+            width: 110px; height: 44px;
+            background: rgba(255, 255, 255, 0.35); border: 1px solid rgba(255, 255, 255, 0.5);
+            border-top: 1px solid rgba(0, 0, 0, 0.08); border-left: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 22px; font-size: 18px; font-weight: 900; color: var(--primary);
+            text-align: center; outline: none; transition: 0.2s;
+            box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.08), inset -3px -3px 6px rgba(255, 255, 255, 0.9), 0 1px 1px rgba(255, 255, 255, 0.8);
+        }
+        .rate-input-group input:focus {
+            background: rgba(255, 255, 255, 0.7);
+            box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.05), inset -2px -2px 4px rgba(255, 255, 255, 1), 0 0 0 3px rgba(59, 194, 173, 0.3);
+        }
+
+        /* 薄荷青：带彩色漫反射发光的果冻键 (对应原图 Secondary) */
+        .btn-history {
+            height: 40px; padding: 0 20px;
+            background: var(--secondary-grad);
+            border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; font-size: 14px; color: #fff; cursor: pointer; font-weight: 800; 
+            text-shadow: 0 1px 2px rgba(0,0,0,0.15); transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            /* 多重阴影：发光阴影 + 顶部白高光 + 底部黑厚度 */
+            box-shadow: var(--secondary-glow), inset 2px 3px 5px rgba(255, 255, 255, 0.5), inset -2px -3px 5px rgba(0, 0, 0, 0.15);
+        }
+        .btn-history:active { transform: translateY(3px) scale(0.96); box-shadow: 0 4px 8px -2px rgba(75, 196, 180, 0.5), inset 3px 4px 8px rgba(0, 0, 0, 0.15); }
+
+        .rate-quick-row { display: flex; align-items: center; gap: 10px; border-top: 1px solid rgba(255, 255, 255, 0.5); padding-top: 16px; }
+        .quick-label { font-size: 13px; color: var(--text-sub); font-weight: 700; white-space: nowrap; text-shadow: 0 1px 1px #fff; }
+
+        /* 🔥 极其立体的玻璃实体凸出小按键 🔥 */
+        .quick-btn, .btn-setting {
+            flex: 1; height: 38px;
+            background: var(--glass-surface); border: var(--glass-border); border-top: var(--glass-edge-light); border-left: var(--glass-edge-light);
+            border-radius: 19px; font-size: 14px; font-weight: 800; color: var(--text-main); text-shadow: 0 1px 1px #fff; cursor: pointer; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--btn-shadow);
+        }
+        .btn-setting { background: linear-gradient(135deg, rgba(107, 90, 237, 0.15) 0%, rgba(107, 90, 237, 0.02) 100%); color: var(--primary); text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
         
-        button.btn-pink { background: var(--primary-pink); border-radius: 8px; border: none; color: white; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; width: 100%; transition: opacity 0.2s;}
-        button.btn-blue { background: var(--primary-blue); border-radius: 8px; border: none; color: white; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; width: 100%; transition: opacity 0.2s;}
-        button:active { opacity: 0.8; }
+        .quick-btn:active, .btn-setting:active { transform: translateY(3px) scale(0.96); box-shadow: var(--btn-shadow-active); background: rgba(255, 255, 255, 0.5); }
 
-        /* ======== 右侧主内容区域 ======== */
-        #main-content { 
-            flex-grow: 1; 
-            background: var(--card-glass); 
-            border-radius: 15px; 
-            padding: 20px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-            width: calc(100% - 320px); 
+        /* ================= 金额显示区 (厚度发光卡片) ================= */
+        .display-row { display: flex; gap: 16px; margin-bottom: 24px; }
+        .currency-box {
+            flex: 1; background: linear-gradient(135deg, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0.2) 100%);
+            border: var(--glass-border); border-top: var(--glass-edge-light); border-left: var(--glass-edge-light);
+            border-radius: 28px; padding: 22px 12px; text-align: center; cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--btn-shadow);
         }
-        .main-header { font-size: 18px; font-weight: bold; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 1px solid #eee;}
+        .currency-box.active {
+            background: rgba(255, 255, 255, 0.95); border-color: #fff; transform: translateY(-5px);
+            /* 激活时投射出绝美的紫色光斑 */
+            box-shadow: var(--primary-glow), inset 2px 2px 5px #fff, inset -2px -2px 5px rgba(0, 0, 0, 0.03);
+        }
+        .currency-btn { display: inline-block; font-size: 14px; font-weight: 800; margin-bottom: 12px; color: var(--text-sub); text-shadow: 0 1px 1px #fff; pointer-events: none; }
+        .currency-box.active .currency-btn { color: var(--primary); text-shadow: none; }
+        .currency-amount { font-size: 28px; font-weight: 900; word-break: break-all; color: var(--text-main); text-shadow: 0 1px 2px rgba(255,255,255,0.8); }
+        .currency-box.active .currency-amount { color: var(--primary); text-shadow: none; }
 
-        /* 统计面板 */
-        .stats-panel { display: flex; gap: 20px; background: rgba(92, 175, 255, 0.08); border: 1px solid rgba(92, 175, 255, 0.2); padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        .stat-item { font-size: 13px; color: var(--sub-text-color); flex: 1;}
-        .stat-value { font-size: 20px; font-weight: bold; color: var(--primary-blue); margin-top: 5px;}
-        .stat-value.income { color: #ff6b6b; }
+        /* ================= 真正的 3D 水晶键盘 ================= */
+        .numpad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: auto; padding-bottom: 5px;}
+        .numpad button {
+            height: 68px;
+            background: var(--glass-surface); border: var(--glass-border); border-top: var(--glass-edge-light); border-left: var(--glass-edge-light);
+            border-radius: 22px; font-size: 24px; font-weight: 800; color: var(--text-main); text-shadow: 0 1px 1px #fff;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--btn-shadow); /* 套用 3D 实体阴影引擎 */
+        }
+        .numpad button:active { transform: translateY(4px) scale(0.94); box-shadow: var(--btn-shadow-active); background: rgba(255, 255, 255, 0.6); }
+        .numpad button.action { font-size: 16px; color: var(--text-sub); background: linear-gradient(135deg, rgba(255,255,255,0.6), rgba(255,255,255,0.2)); }
+        .numpad > div { background: transparent !important; border: none !important; box-shadow: none !important; pointer-events: none; }
 
-        /* 日历样式微调 */
-        .fc { --fc-border-color: #eee; font-size: 12px; }
-        .fc-header-toolbar { flex-wrap: wrap; gap: 10px; margin-bottom: 15px !important; }
-        .fc-toolbar-title { font-size: 16px !important; }
-        .fc .fc-button { padding: 5px 10px; font-size: 12px; }
+        /* 🔥 紫罗兰液态发光主键 (对应原图 Start Project) 🔥 */
+        .numpad button.save {
+            background: var(--primary-grad); color: #fff; font-size: 18px; border: 1px solid rgba(255, 255, 255, 0.4); 
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: var(--primary-glow), inset 2px 3px 5px rgba(255, 255, 255, 0.5), inset -2px -3px 5px rgba(0, 0, 0, 0.2);
+        }
+        .numpad button.save:active { background: #5648ed; box-shadow: 0 6px 12px -2px rgba(86, 72, 237, 0.5), inset 3px 4px 8px rgba(0, 0, 0, 0.3); }
+
+        /* ================= 历史记录页面细节对齐 ================= */
+        #historyPage { display: none; flex-direction: column; flex: 1; height: 100%; }
         
-        .event-card { display: flex; align-items: center; gap: 5px; font-size: 11px; width: 100%; overflow: hidden;}
-        .event-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;}
-        .event-time-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: bold;}
+        .back-btn {
+            margin-bottom: 24px; padding: 12px 24px; align-self: flex-start;
+            background: var(--glass-surface); border: var(--glass-border); border-top: var(--glass-edge-light); border-left: var(--glass-edge-light);
+            border-radius: 20px; font-size: 15px; font-weight: 800; color: var(--text-main); text-shadow: 0 1px 1px #fff;
+            cursor: pointer; box-shadow: var(--btn-shadow); transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .back-btn:active { transform: translateY(3px) scale(0.95); box-shadow: var(--btn-shadow-active); background: rgba(255, 255, 255, 0.6); }
+
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .history-header h3 { font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0; text-shadow: 0 1px 2px #fff; }
+
+        .wan-toggle-btn {
+            height: 40px; padding: 0 18px;
+            background: var(--glass-surface); border: var(--glass-border); border-top: var(--glass-edge-light); border-left: var(--glass-edge-light);
+            border-radius: 20px; font-size: 13px; font-weight: 800; color: var(--text-main); cursor: pointer; transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--btn-shadow); text-shadow: 0 1px 1px #fff;
+        }
+        .wan-toggle-btn.active {
+            background: var(--primary-grad) !important; color: white !important; border: none !important; text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: var(--primary-glow), inset 2px 3px 5px rgba(255, 255, 255, 0.4), inset -2px -3px 5px rgba(0, 0, 0, 0.2) !important;
+        }
+        .wan-toggle-btn:active { transform: translateY(3px) scale(0.95); box-shadow: var(--btn-shadow-active); }
+
+        .history-list { list-style: none; margin-bottom: 24px; max-height: 55vh; overflow-y: auto; padding-right: 8px; flex: 1; }
+        .history-list::-webkit-scrollbar { width: 6px; }
+        .history-list::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 5px; }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.4); border: var(--glass-border); border-top: var(--glass-edge-light); border-left: var(--glass-edge-light);
+            border-radius: 24px; padding: 20px; margin-bottom: 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.03), inset 2px 3px 5px rgba(255,255,255,0.8);
+        }
+        .item-content { flex: 1; }
+        .item-line { display: flex; align-items: center; margin-bottom: 6px; font-size: 14px; }
+        .line-label { width: 80px; color: var(--text-sub); font-weight: 700; display: inline-block; font-size: 13px; text-shadow: 0 1px 1px #fff; }
+        .line-val { font-size: 16px; font-weight: 900; color: var(--text-main); text-shadow: 0 1px 1px #fff; }
+
+        .item-actions { display: flex; flex-direction: column; gap: 10px; margin-left: 12px; }
+        .action-btn {
+            padding: 8px 0; width: 64px; background: var(--glass-surface); border: var(--glass-border); border-top: var(--glass-edge-light); border-left: var(--glass-edge-light);
+            border-radius: 16px; font-size: 13px; font-weight: 800; cursor: pointer; text-shadow: 0 1px 1px #fff;
+            box-shadow: var(--btn-shadow); transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .action-btn:active { transform: translateY(3px) scale(0.92); box-shadow: var(--btn-shadow-active); background: rgba(255,255,255,0.6); }
+        .btn-copy { color: var(--text-main); }
+        .btn-del { color: #e11d48; }
+
+        .export-btn, .clear-btn { width: 100%; height: 56px; border-radius: 28px; font-size: 16px; cursor: pointer; margin-bottom: 16px; font-weight: 800; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: center; }
         
-        /* ======== 核心修改：请假状态文字显示红色划线 ======== */
-        .event-card.status-canceled-text .event-time-name { 
-            color: #555; /* 字体深灰色，保证清晰度 */
-            text-decoration: line-through red 2px; /* 红色划线，加粗2px更显眼 */
+        .export-btn {
+            background: var(--secondary-grad); color: #fff; border: 1px solid rgba(255, 255, 255, 0.4); text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            box-shadow: var(--secondary-glow), inset 2px 3px 5px rgba(255, 255, 255, 0.5), inset -2px -3px 5px rgba(0, 0, 0, 0.15);
         }
+        .export-btn:active { transform: translateY(3px) scale(0.98); box-shadow: 0 4px 8px -2px rgba(75, 196, 180, 0.5), inset 3px 4px 8px rgba(0, 0, 0, 0.15); }
 
-        /* 学生列表卡片 */
-        .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
-        .student-card { background: white; border: 1px solid #eee; border-radius: 10px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.02); position: relative;}
-        .st-name { font-size: 16px; font-weight: bold; color: var(--primary-blue); margin-bottom: 5px;}
-        .st-info { font-size: 13px; color: var(--sub-text-color); margin: 3px 0; display: flex; align-items: center; gap: 5px;}
-        .btn-delete { position: absolute; right: 15px; top: 15px; background: #ffebeb; color: #ff4d4f; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;}
-
-        /* 自定义状态选择弹窗 */
-        #statusModal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center;
-            z-index: 9999; backdrop-filter: blur(4px);
+        .clear-btn {
+            background: var(--glass-surface); color: #e11d48; 
+            border: var(--glass-border); border-top: var(--glass-edge-light); border-left: var(--glass-edge-light); text-shadow: 0 1px 1px #fff;
+            box-shadow: var(--btn-shadow);
         }
-        .modal-content {
-            background: white; padding: 25px; border-radius: 15px; width: 85%; max-width: 320px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 12px;
-        }
-        .modal-title { font-size: 16px; font-weight: bold; text-align: center; margin-bottom: 5px; color: #333; word-break: break-all;}
-        .modal-btn { padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: background 0.2s;}
-        .btn-complete { background: #e8f5e9; color: #2e7d32; } 
-        .btn-cancel { background: #ffebee; color: #c62828; }   
-        .btn-reset { background: #e3f2fd; color: #1565c0; }    
-        .btn-remove { background: #f5f5f5; color: #616161; border: 1px dashed #ccc;} 
-        .btn-close { background: #333; color: white; margin-top: 5px;} 
+        .clear-btn:active { transform: translateY(3px) scale(0.98); box-shadow: var(--btn-shadow-active); background: rgba(255,255,255,0.6); }
 
-        .hidden { display: none !important; }
-
-        /* 移动端适配 */
-        @media (max-width: 768px) {
-            #wrapper { flex-direction: column; gap: 15px; }
-            #sidebar, #main-content { width: 100%; }
-            #main-content { padding: 15px; }
-            .fc-toolbar-chunk { display: flex; justify-content: center; width: 100%; margin-bottom: 5px;}
-            .stats-panel { flex-direction: column; gap: 10px; }
+        /* ================= 底部厚重悬浮 Toast ================= */
+        #toast {
+            position: fixed; bottom: -80px; left: 50%; transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.5); border-top: 1.5px solid #fff; border-left: 1.5px solid #fff;
+            color: var(--primary); padding: 14px 32px; border-radius: 30px; font-size: 15px; font-weight: 800;
+            transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); opacity: 0; pointer-events: none; z-index: 1000;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1), inset 2px 3px 5px rgba(255, 255, 255, 1);
         }
+        #toast.show { bottom: 40px; opacity: 1; }
     </style>
 </head>
 <body>
 
-<div id="wrapper">
-    <div id="sidebar">
-        <div class="brand">
-            <div class="brand-icon"></div>
-            <div class="brand-info">
-                <h1>排课管理 / Tutor</h1>
+<div class="ambient-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+</div>
+
+<div class="app-container" id="calcPage">
+    <div class="rate-card">
+        <div class="rate-current-row">
+            <div class="rate-input-group">
+                <label>💱 当前汇率</label>
+                <input type="number" id="rateInput" value="0.920" step="0.001" onchange="calc()" oninput="calc()">
             </div>
+            <button class="btn-history" onclick="switchPage('history')">📜 历史</button>
         </div>
-
-        <ul class="nav-links">
-            <li id="tab-calendar" class="active" onclick="switchTab('calendar')"><i>📅</i> 课表排期</li>
-            <li id="tab-students" onclick="switchTab('students')"><i>📁</i> 学生档案</li>
-        </ul>
-
-        <div id="form-calendar" class="glass-form">
-            <div class="form-group">
-                <label>选择学生:</label>
-                <select id="eventStudentId">
-                    <option value="">请先在[学生档案]添加学生</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>上课日期:</label>
-                <input type="date" id="eventDate">
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <div class="form-group" style="flex:1;">
-                    <label>开始:</label>
-                    <input type="time" id="eventStart" value="18:00">
-                </div>
-                <div class="form-group" style="flex:1;">
-                    <label>结束:</label>
-                    <input type="time" id="eventEnd" value="20:00">
-                </div>
-            </div>
-            <button class="btn-pink" onclick="addEvent()">💾 快捷排课</button>
-        </div>
-
-        <div id="form-students" class="glass-form blue-theme hidden">
-            <div class="form-group">
-                <label>学生姓名:</label>
-                <input type="text" id="stName" placeholder="如：李小明">
-            </div>
-            
-            <div class="form-group">
-                <label>辅导年级及科目:</label>
-                <div style="display: flex; gap: 10px;">
-                    <select id="stGrade" style="flex: 1.2;">
-                        <optgroup label="小学阶段">
-                            <option value="一年级">一年级</option>
-                            <option value="二年级">二年级</option>
-                            <option value="三年级">三年级</option>
-                            <option value="四年级">四年级</option>
-                            <option value="五年级">五年级</option>
-                            <option value="六年级">六年级</option>
-                        </optgroup>
-                        <optgroup label="初中阶段">
-                            <option value="初一">初一</option>
-                            <option value="初二" selected>初二</option>
-                            <option value="初三">初三</option>
-                        </optgroup>
-                        <optgroup label="高中阶段">
-                            <option value="高一">高一</option>
-                            <option value="高二">高二</option>
-                            <option value="高三">高三</option>
-                        </optgroup>
-                    </select>
-                    
-                    <select id="stSubjectName" style="flex: 1;">
-                        <option value="语文">语文</option>
-                        <option value="数学" selected>数学</option>
-                        <option value="英语">英语</option>
-                        <option value="物理">物理</option>
-                        <option value="化学">化学</option>
-                        <option value="生物">生物</option>
-                        <option value="政治">政治</option>
-                        <option value="历史">历史</option>
-                        <option value="地理">地理</option>
-                        <option value="全科">全科</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>课时单价 (元/小时):</label>
-                <input type="number" id="stPrice" placeholder="如：150">
-            </div>
-            <div class="form-group">
-                <label>上门地址 (选填):</label>
-                <input type="text" id="stAddress" placeholder="如：阳光小区3栋">
-            </div>
-            <button class="btn-blue" onclick="saveStudent()">➕ 新增学生</button>
+        <div class="rate-quick-row">
+            <span class="quick-label">常用快捷:</span>
+            <button class="quick-btn" id="btnQuick0" onclick="applyQuickRate(0)">0.920</button>
+            <button class="quick-btn" id="btnQuick1" onclick="applyQuickRate(1)">0.930</button>
+            <button class="btn-setting" onclick="editQuickRates()">⚙️ 自定义</button>
         </div>
     </div>
 
-    <div id="main-content">
-        <div id="page-calendar">
-            <h2 class="main-header">我的课表</h2>
-            
-            <div class="stats-panel">
-                <div class="stat-item">
-                    当前视图有效总课时 (小时)
-                    <div class="stat-value" id="stat-hours">0.0</div>
-                </div>
-                <div class="stat-item">
-                    当前视图预计总收入 (元)
-                    <div class="stat-value income" id="stat-fee">¥ 0.00</div>
-                </div>
-            </div>
-
-            <div id='calendar'></div>
+    <div class="display-row">
+        <div class="currency-box active" id="boxRmb" onclick="setFocus('rmb')">
+            <div class="currency-btn">🔴 人民币 (¥)</div>
+            <div class="currency-amount"><span id="valRmb">0</span></div>
         </div>
-
-        <div id="page-students" class="hidden">
-            <h2 class="main-header">已存学生档案</h2>
-            <div id="student-list" class="student-grid">
-                </div>
+        <div class="currency-box" id="boxHkd" onclick="setFocus('hkd')">
+            <div class="currency-btn">🔵 港币 ($)</div>
+            <div class="currency-amount"><span id="valHkd">0</span></div>
         </div>
+    </div>
+
+    <div class="numpad">
+        <button onclick="press('7')">7</button>
+        <button onclick="press('8')">8</button>
+        <button onclick="press('9')">9</button>
+        <button class="action" onclick="press('DEL')">删除</button>
+        
+        <button onclick="press('4')">4</button>
+        <button onclick="press('5')">5</button>
+        <button onclick="press('6')">6</button>
+        <button class="action" onclick="press('C')">清空</button>
+        
+        <button onclick="press('1')">1</button>
+        <button onclick="press('2')">2</button>
+        <button onclick="press('3')">3</button>
+        <div></div> <button onclick="press('.')">.</button>
+        <button onclick="press('0')">0</button>
+        <button onclick="press('0000')">0000</button>
+        <button class="save" onclick="saveRecord()">保存</button>
     </div>
 </div>
 
-<div id="statusModal" class="hidden">
-    <div class="modal-content">
-        <div class="modal-title" id="modalEventTitle">课程操作</div>
-        <button class="modal-btn btn-complete" onclick="setEventStatus('completed')">✅ 标记已上课 (变绿)</button>
-        <button class="modal-btn btn-cancel" onclick="setEventStatus('canceled')">❌ 学生请假 (变灰底红划线)</button>
-        <button class="modal-btn btn-reset" onclick="setEventStatus('pending')">📅 恢复为待上课 (变蓝)</button>
-        <button class="modal-btn btn-remove" onclick="setEventStatus('delete')">🗑️ 彻底删除这节课</button>
-        <button class="modal-btn btn-close" onclick="closeModal()">取消</button>
+<div class="app-container" id="historyPage">
+    <button class="back-btn" onclick="switchPage('calc')">⬅️ 返回</button>
+    
+    <div class="history-header">
+        <h3>📜 保存的计算</h3>
+        <button id="wanToggleBtn" class="wan-toggle-btn" onclick="toggleWanUnit()">单位:万</button>
     </div>
+    
+    <ul class="history-list" id="historyList"></ul>
+    
+    <button class="export-btn" onclick="exportHistory()">📥 导出 Excel (.csv)</button>
+    <button class="clear-btn" onclick="clearHistory()">🗑️ 清空记录</button>
 </div>
+
+<div id="toast">✨ 已应用</div>
 
 <script>
-    let calendar;
-    let currentClickedEvent = null; 
+    let focus = 'rmb'; 
+    let values = { rmb: '', hkd: '' };
+    let historyData = JSON.parse(localStorage.getItem('currencyHistory')) || [];
+    let quickRates = JSON.parse(localStorage.getItem('quickRates')) || ["0.920", "0.930"];
     
-    // 数据读取
-    let eventsData = JSON.parse(localStorage.getItem('myTutorEvents')) || [];
-    let studentsData = JSON.parse(localStorage.getItem('myTutorStudents')) || [];
+    let showWanSpacing = localStorage.getItem('showWanSpacing') === 'true';
 
-    document.addEventListener('DOMContentLoaded', function() {
-        initCalendar();
-        renderStudentList();
-        updateStudentDropdown();
-    });
+    const domRmb = document.getElementById('valRmb');
+    const domHkd = document.getElementById('valHkd');
+    const boxRmb = document.getElementById('boxRmb');
+    const boxHkd = document.getElementById('boxHkd');
+    const rateInput = document.getElementById('rateInput');
+    const btnQuick0 = document.getElementById('btnQuick0');
+    const btnQuick1 = document.getElementById('btnQuick1');
+    const wanToggleBtn = document.getElementById('wanToggleBtn');
 
-    function switchTab(tabName) {
-        document.getElementById('tab-calendar').classList.remove('active');
-        document.getElementById('tab-students').classList.remove('active');
-        document.getElementById('tab-' + tabName).classList.add('active');
-
-        document.getElementById('form-calendar').classList.add('hidden');
-        document.getElementById('form-students').classList.add('hidden');
-        document.getElementById('form-' + tabName).classList.remove('hidden');
-
-        document.getElementById('page-calendar').classList.add('hidden');
-        document.getElementById('page-students').classList.add('hidden');
-        document.getElementById('page-' + tabName).classList.remove('hidden');
-
-        if(tabName === 'calendar' && calendar) {
-            calendar.render();
-            refreshStats();
+    window.onload = function() {
+        const savedState = JSON.parse(localStorage.getItem('calcState'));
+        if (savedState) {
+            values = savedState.values || { rmb: '', hkd: '' };
+            rateInput.value = savedState.rate || quickRates[0];
+            focus = savedState.focus || 'rmb';
+            setFocus(focus);
+            updateDisplay();
         }
+        renderQuickRates();
+        updateWanButtonUI();
     }
 
-    function refreshStats(calInstance) {
-        let cal = calInstance || calendar;
-        if (!cal) return;
+    function renderQuickRates() {
+        btnQuick0.innerText = quickRates[0];
+        btnQuick1.innerText = quickRates[1];
+    }
 
-        let viewStart = cal.view.activeStart;
-        let viewEnd = cal.view.activeEnd;
-        let currentEvents = cal.getEvents();
+    function applyQuickRate(index) {
+        rateInput.value = quickRates[index];
+        calc();
+        saveCurrentState();
+        showToast("已切换汇率: " + quickRates[index]);
+    }
+
+    function editQuickRates() {
+        let r1 = prompt("⚙️ 设置常用汇率 1:", quickRates[0]);
+        if (r1 !== null && !isNaN(r1) && r1 > 0) quickRates[0] = parseFloat(r1).toFixed(3);
         
-        let totalHours = 0;
-        let totalFee = 0;
-
-        currentEvents.forEach(ev => {
-            if (ev.start >= viewStart && ev.start < viewEnd) {
-                let status = ev.extendedProps.status || 'pending';
-                if (status !== 'canceled') {
-                    let durationHours = (ev.end - ev.start) / (1000 * 60 * 60);
-                    let price = parseFloat(ev.extendedProps.price) || 0; 
-                    totalHours += durationHours;
-                    totalFee += (durationHours * price);
-                }
-            }
-        });
-
-        document.getElementById('stat-hours').innerText = totalHours.toFixed(1);
-        document.getElementById('stat-fee').innerText = '¥ ' + totalFee.toFixed(2);
-    }
-
-    function saveStudent() {
-        let name = document.getElementById('stName').value.trim();
-        let grade = document.getElementById('stGrade').value;
-        let subjectName = document.getElementById('stSubjectName').value;
-        let price = document.getElementById('stPrice').value.trim();
-        let address = document.getElementById('stAddress').value.trim();
-
-        if (!name) {
-            alert("学生姓名是必填项哦！");
-            return;
-        }
-
-        let fullSubject = grade + subjectName;
-        let newStudent = {
-            id: Date.now().toString(),
-            name: name,
-            subject: fullSubject,
-            price: price,
-            address: address
-        };
-
-        studentsData.push(newStudent);
-        localStorage.setItem('myTutorStudents', JSON.stringify(studentsData));
+        let r2 = prompt("⚙️ 设置常用汇率 2:", quickRates[1]);
+        if (r2 !== null && !isNaN(r2) && r2 > 0) quickRates[1] = parseFloat(r2).toFixed(3);
         
-        document.getElementById('stName').value = '';
-        document.getElementById('stPrice').value = '';
-        document.getElementById('stAddress').value = '';
-
-        renderStudentList();
-        updateStudentDropdown();
-        alert("学生添加成功！");
+        localStorage.setItem('quickRates', JSON.stringify(quickRates));
+        renderQuickRates();
+        showToast("快捷汇率已更新");
     }
 
-    function deleteStudent(id) {
-        if(confirm("确定要删除这位学生档案吗？(已排的课程不会被删除)")) {
-            studentsData = studentsData.filter(s => s.id !== id);
-            localStorage.setItem('myTutorStudents', JSON.stringify(studentsData));
-            renderStudentList();
-            updateStudentDropdown();
-        }
+    function saveCurrentState() {
+        const state = { values: values, rate: rateInput.value, focus: focus };
+        localStorage.setItem('calcState', JSON.stringify(state));
     }
 
-    function renderStudentList() {
-        let listDiv = document.getElementById('student-list');
-        listDiv.innerHTML = '';
-
-        if(studentsData.length === 0) {
-            listDiv.innerHTML = '<p style="color:#999; font-size:14px;">暂无学生档案，请在左侧添加。</p>';
-            return;
-        }
-
-        studentsData.forEach(st => {
-            let card = document.createElement('div');
-            card.className = 'student-card';
-            card.innerHTML = `
-                <button class="btn-delete" onclick="deleteStudent('${st.id}')">删除</button>
-                <div class="st-name">${st.name}</div>
-                <div class="st-info">📚 科目: ${st.subject}</div>
-                <div class="st-info">💰 单价: ${st.price ? st.price + '元/小时' : '未设定'}</div>
-                <div class="st-info">📍 地址: ${st.address || '未填写'}</div>
-            `;
-            listDiv.appendChild(card);
-        });
-    }
-
-    function updateStudentDropdown() {
-        let select = document.getElementById('eventStudentId');
-        select.innerHTML = '';
-
-        if(studentsData.length === 0) {
-            select.innerHTML = '<option value="">请先在[学生档案]添加</option>';
-            return;
-        }
-
-        studentsData.forEach(st => {
-            let opt = document.createElement('option');
-            opt.value = st.id; 
-            opt.text = `${st.name} (${st.subject})`;
-            select.appendChild(opt);
-        });
-    }
-
-    function initCalendar() {
-        var calendarEl = document.getElementById('calendar');
-
-        calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridWeek',
-            locale: 'zh-cn',
-            height: 'auto', 
-            slotMinTime: '08:00:00',
-            slotMaxTime: '21:00:00',
-            allDaySlot: false, 
-            headerToolbar: {
-                left: 'prev,next',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
-            buttonText: { month: '月', week: '周', day: '日' },
-            events: eventsData,
-            
-            datesSet: function(info) {
-                refreshStats(info.view.calendar);
-            },
-            
-            eventContent: function(arg) {
-                let timeStr = arg.event.start.getHours() + ':' + String(arg.event.start.getMinutes()).padStart(2, '0');
-                let nameStr = arg.event.title;
-                let status = arg.event.extendedProps.status || 'pending';
-                
-                let dotColor = 'var(--status-pending)';
-                let cardClass = 'event-card';
-                if(status === 'completed') dotColor = 'var(--status-completed)';
-                if(status === 'canceled') {
-                    dotColor = 'var(--status-canceled)';
-                    cardClass = 'event-card status-canceled-text'; 
-                }
-
-                let cardEl = document.createElement('div');
-                cardEl.className = cardClass;
-                cardEl.innerHTML = `
-                    <div class="event-dot" style="background-color: ${dotColor};"></div>
-                    <div class="event-time-name">${timeStr} ${nameStr}</div>
-                `;
-                return { domNodes: [cardEl] };
-            },
-            
-            eventClick: function(info) {
-                currentClickedEvent = info.event;
-                document.getElementById('modalEventTitle').innerText = "操作课程：" + info.event.title;
-                document.getElementById('statusModal').classList.remove('hidden');
-            }
-        });
-        calendar.render();
-    }
-
-    function setEventStatus(status) {
-        if (!currentClickedEvent) return;
-
-        if (status === 'delete') {
-            if (confirm("确定要彻底删除 【" + currentClickedEvent.title + "】 的排课吗？")) {
-                currentClickedEvent.remove();
-            }
+    function setFocus(target) {
+        focus = target;
+        if (target === 'rmb') {
+            boxRmb.classList.add('active'); boxHkd.classList.remove('active');
         } else {
-            currentClickedEvent.setExtendedProp('status', status);
-            
-            if(status === 'pending') {
-                currentClickedEvent.setProp('backgroundColor', 'var(--status-pending)');
-                currentClickedEvent.setProp('borderColor', 'var(--status-pending)');
-            } else if(status === 'completed') {
-                currentClickedEvent.setProp('backgroundColor', 'rgba(76, 175, 80, 0.2)'); 
-                currentClickedEvent.setProp('borderColor', 'var(--status-completed)');
-            } else if(status === 'canceled') {
-                currentClickedEvent.setProp('backgroundColor', '#e0e0e0'); 
-                currentClickedEvent.setProp('borderColor', '#9e9e9e'); 
-            }
+            boxHkd.classList.add('active'); boxRmb.classList.remove('active');
         }
-
-        saveEventsToLocal();
-        refreshStats();
-        closeModal();
+        saveCurrentState();
     }
 
-    function closeModal() {
-        document.getElementById('statusModal').classList.add('hidden');
-        currentClickedEvent = null;
+    function calc() {
+        let rate = parseFloat(rateInput.value);
+        if (isNaN(rate) || rate <= 0) return;
+        if (focus === 'rmb') {
+            if (values.rmb === '') values.hkd = '';
+            else values.hkd = (parseFloat(values.rmb) / rate).toFixed(2);
+        } else {
+            if (values.hkd === '') values.rmb = '';
+            else values.rmb = (parseFloat(values.hkd) * rate).toFixed(2);
+        }
+        updateDisplay();
+        saveCurrentState();
     }
 
-    function addEvent() {
-        let selectEl = document.getElementById('eventStudentId');
-        let studentId = selectEl.value; 
-        let date = document.getElementById('eventDate').value;
-        let start = document.getElementById('eventStart').value;
-        let end = document.getElementById('eventEnd').value;
+    function press(val) {
+        let current = values[focus];
+        if (val === 'C') { values.rmb = ''; values.hkd = ''; } 
+        else if (val === 'DEL') { values[focus] = current.slice(0, -1); } 
+        else if (val === '.') {
+            if (!current.includes('.')) values[focus] = current === '' ? '0.' : current + '.';
+        } 
+        else { values[focus] = current + val; }
+        calc();
+    }
 
-        if (studentsData.length === 0 || !studentId) {
-            alert('请先切换到【学生档案】页面添加一个学生！');
-            return;
+    function updateDisplay() {
+        domRmb.innerText = values.rmb === '' ? '0' : values.rmb;
+        domHkd.innerText = values.hkd === '' ? '0' : values.hkd;
+    }
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.innerText = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    function getFullTimeString() {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+    }
+
+    function saveRecord() {
+        if (values.rmb === '' || values.hkd === '') return;
+        const record = { 
+            time: getFullTimeString(), 
+            rate: rateInput.value, 
+            rmb: parseFloat(values.rmb).toFixed(2), 
+            hkd: parseFloat(values.hkd).toFixed(2) 
+        };
+        historyData.unshift(record); 
+        localStorage.setItem('currencyHistory', JSON.stringify(historyData));
+        showToast("✨ 计算已保存");
+    }
+
+    function toggleWanUnit() {
+        showWanSpacing = !showWanSpacing;
+        localStorage.setItem('showWanSpacing', showWanSpacing);
+        updateWanButtonUI();
+        renderHistory();
+    }
+
+    function updateWanButtonUI() {
+        if (showWanSpacing) {
+            wanToggleBtn.classList.add('active');
+        } else {
+            wanToggleBtn.classList.remove('active');
         }
+    }
 
-        if (!date || !start || !end) {
-            alert('请选择上课的日期和时间！');
-            return;
+    function formatNumberWithWanSpace(numStr) {
+        let val = parseFloat(numStr).toFixed(2);
+        if (!showWanSpacing) return val; 
+        
+        let parts = val.split('.');
+        let intPart = parts[0];
+        let decPart = parts[1];
+        
+        if (intPart.length > 4) {
+            let wan = intPart.slice(0, -4);
+            let remainder = intPart.slice(-4);
+            return `${wan}<span style="display:inline-block; width:14px;"></span>${remainder}.${decPart}`;
         }
+        return val;
+    }
 
-        let newStart = new Date(date + 'T' + start + ':00');
-        let newEnd = new Date(date + 'T' + end + ':00');
-
-        if (newStart >= newEnd) {
-            alert('结束时间必须晚于开始时间哦！');
-            return;
+    function renderHistory() {
+        const list = document.getElementById('historyList');
+        list.innerHTML = '';
+        if (historyData.length === 0) {
+            list.innerHTML = '<li class="history-item" style="justify-content:center; color:var(--text-sub); border:none; box-shadow:none;">暂无记录</li>'; return;
         }
-
-        let existingEvents = calendar.getEvents();
-        let hasConflict = false;
-
-        for (let i = 0; i < existingEvents.length; i++) {
-            let evStart = existingEvents[i].start;
-            let evEnd = existingEvents[i].end;
-            let evStatus = existingEvents[i].extendedProps.status || 'pending';
-
-            if (evStatus !== 'canceled') {
-                if (newStart < evEnd && newEnd > evStart) {
-                    hasConflict = true;
-                    break;
-                }
-            }
-        }
-
-        if (hasConflict) {
-            alert('⚠️ 时间冲突警告！该时间段你已经安排了其他有效课程，请修改时间。');
-            return; 
-        }
-
-        let studentObj = studentsData.find(s => s.id === studentId);
-        let studentPrice = studentObj ? parseFloat(studentObj.price) || 0 : 0;
-        let displayTitle = selectEl.options[selectEl.selectedIndex].text;
-
-        calendar.addEvent({
-            title: displayTitle, 
-            start: date + 'T' + start + ':00',
-            end: date + 'T' + end + ':00',
-            backgroundColor: 'var(--status-pending)', 
-            borderColor: 'var(--status-pending)',
-            extendedProps: { 
-                price: studentPrice,
-                status: 'pending' 
-            }
+        historyData.forEach((item, index) => {
+            const li = document.createElement('li'); 
+            li.className = 'history-item';
+            li.innerHTML = `
+                <div class="item-content">
+                    <div style="color: var(--text-sub); font-size: 12px; margin-bottom: 8px; font-weight:700; text-shadow:0 1px 1px #fff;">🕒 ${item.time}</div>
+                    <div class="item-line">
+                        <span class="line-label">💱 汇率:</span>
+                        <span class="line-val" style="color:var(--primary)">${item.rate}</span>
+                    </div>
+                    <div class="item-line">
+                        <span class="line-label">🔴 人民币:</span>
+                        <span class="line-val">¥ ${formatNumberWithWanSpace(item.rmb)}</span>
+                    </div>
+                    <div class="item-line">
+                        <span class="line-label">🔵 港币:</span>
+                        <span class="line-val">$ ${formatNumberWithWanSpace(item.hkd)}</span>
+                    </div>
+                </div>
+                <div class="item-actions">
+                    <button class="action-btn btn-copy" onclick="copyRecord(${index})">复制</button>
+                    <button class="action-btn btn-del" onclick="deleteRecord(${index})">删除</button>
+                </div>
+            `;
+            list.appendChild(li);
         });
-
-        saveEventsToLocal();
-        refreshStats();
-        alert('排课成功！');
     }
 
-    function saveEventsToLocal() {
-        let events = calendar.getEvents().map(function(e) {
-            return {
-                title: e.title,
-                start: e.startStr,
-                end: e.endStr,
-                price: e.extendedProps.price,
-                status: e.extendedProps.status || 'pending',
-                backgroundColor: e.backgroundColor,
-                borderColor: e.borderColor
-            };
-        });
-        localStorage.setItem('myTutorEvents', JSON.stringify(events));
+    function deleteRecord(index) {
+        if(confirm("确定要删除这条记录吗？")) {
+            historyData.splice(index, 1);
+            localStorage.setItem('currencyHistory', JSON.stringify(historyData));
+            renderHistory();
+            showToast("🗑️ 已删除");
+        }
+    }
+
+    function copyRecord(index) {
+        const item = historyData[index];
+        const text = `时间: ${item.time}\n汇率: ${item.rate}\n人民币: ¥${item.rmb}\n港币: $${item.hkd}`;
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(text).then(() => showToast("📋 复制成功"));
+        } else {
+            let textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try { document.execCommand('copy'); showToast("📋 复制成功"); } 
+            catch (err) { showToast("❌ 复制失败"); }
+            textArea.remove();
+        }
+    }
+
+    function exportHistory() {
+        if (historyData.length === 0) {
+            showToast("⚠️ 没有记录可导出");
+            return;
+        }
+        let csvContent = "\uFEFF时间,汇率,人民币,港币\n";
+        historyData.forEach(item => { csvContent += `${item.time},${item.rate},${item.rmb},${item.hkd}\n`; });
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `汇率计算记录_${new Date().getTime()}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast("📥 导出成功");
+    }
+
+    function clearHistory() {
+        if(confirm("⚠️ 警告：确定要清空所有记录吗？此操作不可恢复！")) {
+            historyData = [];
+            localStorage.removeItem('currencyHistory');
+            renderHistory();
+            showToast("🗑️ 记录已清空");
+        }
+    }
+
+    function switchPage(page) {
+        if (page === 'history') {
+            document.getElementById('calcPage').style.display = 'none';
+            document.getElementById('historyPage').style.display = 'flex';
+            renderHistory();
+        } else {
+            document.getElementById('calcPage').style.display = 'flex';
+            document.getElementById('historyPage').style.display = 'none';
+        }
     }
 </script>
 </body>
